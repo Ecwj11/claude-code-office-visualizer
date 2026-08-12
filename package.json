@@ -1,0 +1,33 @@
+{
+  "name": "claude-agent-office",
+  "version": "1.0.0",
+  "description": "A living virtual office that visualizes Claude Code agents walking around and working — driven by a scripted simulation or by real Claude Code hook events.",
+  "keywords": [
+    "claude",
+    "claude-code",
+    "visualizer",
+    "hooks",
+    "agents",
+    "office"
+  ],
+  "license": "MIT",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=16"
+  },
+  "bin": {
+    "claude-agent-office": "bridge/cli.js"
+  },
+  "scripts": {
+    "start": "node bridge/cli.js",
+    "serve": "node bridge/server.js"
+  },
+  "files": [
+    "index.html",
+    "css/",
+    "js/",
+    "bridge/",
+    "README.md",
+    "LICENSE"
+  ]
+}

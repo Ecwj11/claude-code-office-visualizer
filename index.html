@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agent Office · Claude Code</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="app">
+
+    <!-- ===================== TOP BAR ===================== -->
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-logo">◨</span>
+        <div class="brand-text">
+          <strong>Agent Office</strong>
+          <span>Claude Code · virtual engineering floor</span>
+        </div>
+      </div>
+      <div class="toolbar">
+        <span id="bridge-status" class="bridge-pill" data-state="offline" title="Not connected — showing simulation.">SIM</span>
+        <button id="btn-live" class="btn">GO LIVE</button>
+        <button id="btn-simulate" class="btn btn-primary">
+          <span class="btn-label">SIMULATE</span>
+        </button>
+        <button id="btn-think" class="btn">THINK</button>
+        <button id="btn-add" class="btn">ADD AGENT</button>
+        <button id="btn-reset" class="btn btn-ghost">RESET</button>
+      </div>
+    </header>
+
+    <!-- ===================== LEFT: SESSION + GIT ===================== -->
+    <aside class="panel panel-left">
+      <section class="panel-block">
+        <h2 class="panel-title">Session</h2>
+        <dl class="kv">
+          <div><dt>id</dt><dd>sess_8f3a…c21</dd></div>
+          <div><dt>model</dt><dd>claude-opus-4-8</dd></div>
+          <div><dt>cwd</dt><dd>~/office-visualizer</dd></div>
+          <div><dt>agents</dt><dd><span id="active-count">0</span> active</dd></div>
+        </dl>
+      </section>
+
+      <section class="panel-block">
+        <h2 class="panel-title">Git status</h2>
+        <div class="git-branch"><span class="git-icon">⑂</span> main <span class="git-meta">↑1 ↓0</span></div>
+        <ul class="git-files">
+          <li><span class="g-mod">M</span> src/api/routes.ts</li>
+          <li><span class="g-add">A</span> src/utils/helpers.ts</li>
+          <li><span class="g-mod">M</span> tests/test_users.py</li>
+          <li><span class="g-del">D</span> src/legacy/old.ts</li>
+        </ul>
+      </section>
+
+      <section class="panel-block legend">
+        <h2 class="panel-title">States</h2>
+        <ul class="legend-list">
+          <li><i class="lg state-working"></i>Working</li>
+          <li><i class="lg state-walking"></i>Walking</li>
+          <li><i class="lg state-thinking"></i>Thinking</li>
+          <li><i class="lg state-waiting"></i>Waiting</li>
+          <li><i class="lg state-collaborating"></i>Collaborating</li>
+          <li><i class="lg state-error"></i>Error</li>
+          <li><i class="lg state-completed"></i>Completed</li>
+          <li><i class="lg state-idle"></i>Idle</li>
+        </ul>
+      </section>
+    </aside>
+
+    <!-- ===================== CENTER: OFFICE ===================== -->
+    <main class="office-wrap">
+      <div class="office" id="office">
+        <div class="office-floor" id="office-floor">
+
+          <!-- ambient / structural pieces -->
+          <div class="rug" style="left:50%; top:62%"></div>
+
+          <!-- window (top wall) -->
+          <div class="furn window" style="left:50%; top:10%">
+            <div class="window-view"></div>
+            <span class="furn-label">Window</span>
+          </div>
+
+          <!-- coffee area -->
+          <div class="furn coffee" style="left:88%; top:15%">
+            <span class="furn-emoji">☕</span>
+            <span class="furn-label">Coffee</span>
+          </div>
+
+          <!-- whiteboard -->
+          <div class="furn whiteboard" style="left:11%; top:22%">
+            <div class="board-scribble"></div>
+            <span class="furn-label">Whiteboard</span>
+          </div>
+
+          <!-- Claude's desk (orchestrator) -->
+          <div class="furn desk desk-claude" style="left:50%; top:26%">
+            <div class="monitor">🖥️</div>
+            <span class="furn-label">Claude</span>
+          </div>
+
+          <!-- team desks -->
+          <div class="furn desk" style="left:16%; top:50%">
+            <div class="monitor">💻</div>
+            <span class="furn-label">Builder</span>
+          </div>
+          <div class="furn desk" style="left:84%; top:50%">
+            <div class="monitor">💻</div>
+            <span class="furn-label">Test</span>
+          </div>
+          <div class="furn desk" style="left:16%; top:76%">
+            <div class="monitor">💻</div>
+            <span class="furn-label">Debugger</span>
+          </div>
+          <div class="furn desk" style="left:84%; top:76%">
+            <div class="monitor">💻</div>
+            <span class="furn-label">Validator</span>
+          </div>
+
+          <!-- plants for ambience -->
+          <div class="furn plant" style="left:50%; top:90%">🪴</div>
+          <div class="furn plant" style="left:6%; top:92%">🌿</div>
+          <div class="furn plant" style="left:94%; top:92%">🌿</div>
+
+          <!-- agents are injected here by world.js -->
+        </div>
+      </div>
+    </main>
+
+    <!-- ===================== RIGHT: AGENT STATE ===================== -->
+    <aside class="panel panel-right">
+      <h2 class="panel-title">Agent State</h2>
+      <div class="agent-cards" id="agent-cards"><!-- cards injected --></div>
+    </aside>
+
+    <!-- ===================== BOTTOM: EVENT LOG ===================== -->
+    <section class="logwrap">
+      <h2 class="panel-title">Event Log</h2>
+      <div class="event-log" id="event-log"><!-- rows injected --></div>
+    </section>
+
+  </div>
+
+  <!-- scripts: order matters (classic scripts sharing window.OV; works on file://) -->
+  <script src="js/config.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/agent.js"></script>
+  <script src="js/world.js"></script>
+  <script src="js/events.js"></script>
+  <script src="js/simulation.js"></script>
+  <script src="js/bridge.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

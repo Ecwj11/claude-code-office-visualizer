@@ -1,0 +1,33 @@
+{
+  "//": "Merge this into your project's .claude/settings.json (or ~/.claude/settings.json) to feed real Claude Code hook events into the Agent Office bridge.",
+  "//command": "Each hook posts the event JSON (stdin, -d @-) to the bridge. -m 2 caps it at 2s and '|| true' guarantees exit 0 so hooks NEVER block Claude Code, even if the bridge is not running.",
+  "hooks": {
+    "SessionStart": [
+      { "hooks": [ { "type": "command", "command": "curl -s -m 2 -X POST http://localhost:4319/hook -H 'Content-Type: application/json' -d @- >/dev/null 2>&1 || true" } ] }
+    ],
+    "UserPromptSubmit": [
+      { "hooks": [ { "type": "command", "command": "curl -s -m 2 -X POST http://localhost:4319/hook -H 'Content-Type: application/json' -d @- >/dev/null 2>&1 || true" } ] }
+    ],
+    "PreToolUse": [
+      { "matcher": "*", "hooks": [ { "type": "command", "command": "curl -s -m 2 -X POST http://localhost:4319/hook -H 'Content-Type: application/json' -d @- >/dev/null 2>&1 || true" } ] }
+    ],
+    "PostToolUse": [
+      { "matcher": "*", "hooks": [ { "type": "command", "command": "curl -s -m 2 -X POST http://localhost:4319/hook -H 'Content-Type: application/json' -d @- >/dev/null 2>&1 || true" } ] }
+    ],
+    "SubagentStart": [
+      { "matcher": "*", "hooks": [ { "type": "command", "command": "curl -s -m 2 -X POST http://localhost:4319/hook -H 'Content-Type: application/json' -d @- >/dev/null 2>&1 || true" } ] }
+    ],
+    "SubagentStop": [
+      { "matcher": "*", "hooks": [ { "type": "command", "command": "curl -s -m 2 -X POST http://localhost:4319/hook -H 'Content-Type: application/json' -d @- >/dev/null 2>&1 || true" } ] }
+    ],
+    "Stop": [
+      { "hooks": [ { "type": "command", "command": "curl -s -m 2 -X POST http://localhost:4319/hook -H 'Content-Type: application/json' -d @- >/dev/null 2>&1 || true" } ] }
+    ],
+    "Notification": [
+      { "hooks": [ { "type": "command", "command": "curl -s -m 2 -X POST http://localhost:4319/hook -H 'Content-Type: application/json' -d @- >/dev/null 2>&1 || true" } ] }
+    ],
+    "SessionEnd": [
+      { "hooks": [ { "type": "command", "command": "curl -s -m 2 -X POST http://localhost:4319/hook -H 'Content-Type: application/json' -d @- >/dev/null 2>&1 || true" } ] }
+    ]
+  }
+}
