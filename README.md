@@ -3,7 +3,7 @@
 [![npm](https://img.shields.io/npm/v/claude-agent-office.svg)](https://www.npmjs.com/package/claude-agent-office)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 <!-- After pushing to GitHub, replace OWNER/REPO below with your repo path. -->
-[![CI](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/ci.yml)
+[![CI](https://github.com/Ecwj11/claude-code-office-visualizer/actions/workflows/ci.yml/badge.svg)](https://github.com/Ecwj11/claude-code-office-visualizer/actions/workflows/ci.yml)
 
 A small virtual engineering office where Claude Code's agents **walk around and
 work**. Plain HTML/CSS/JS (no framework, no build step) plus an optional
