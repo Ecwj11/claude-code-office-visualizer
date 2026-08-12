@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [18, 20, 22]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Syntax-check all JS
+        run: |
+          for f in js/*.js bridge/*.js; do
+            echo "check $f"
+            node --check "$f"
+          done
+
+      - name: Validate JSON
+        run: |
+          node -e "require('./package.json')"
+          node -e "JSON.parse(require('fs').readFileSync('bridge/claude-settings.example.json','utf8'))"
+
+      - name: Smoke-test the bridge (serve + SSE + hook intake)
+        run: |
+          PORT=4319 node bridge/server.js &
+          SV=$!
+          sleep 1
+          curl -sf http://localhost:4319/health
+          curl -sf -o /dev/null http://localhost:4319/
+          curl -sf -o /dev/null http://localhost:4319/js/agent.js
+          echo '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"ls"}}' \
+            | curl -sf -X POST http://localhost:4319/hook -H 'Content-Type: application/json' -d @-
+          kill $SV

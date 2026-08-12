@@ -1,10 +1,15 @@
 # Agent Office — Claude Code visualizer
 
+[![npm](https://img.shields.io/npm/v/claude-agent-office.svg)](https://www.npmjs.com/package/claude-agent-office)
+[![license](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+<!-- After pushing to GitHub, replace OWNER/REPO below with your repo path. -->
+[![CI](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/ci.yml)
+
 A small virtual engineering office where Claude Code's agents **walk around and
 work**. Plain HTML/CSS/JS (no framework, no build step) plus an optional
 zero-dependency Node bridge for **live** Claude Code hook events.
 
-![office](./index.html)
+![Agent Office — Claude at the whiteboard, Builder and Debugger collaborating, Test running, states in the side panel](./docs/office.jpg)
 
 ## Get it running (for anyone)
 
@@ -113,6 +118,16 @@ start.command / start.sh / start.bat  double-click launchers (macOS / *nix / Win
   nothing else changes.
 - **Feed your own events:** call `OV.Events.emit(...)` or POST to
   `http://localhost:4319/hook`.
+
+## CI & releasing (maintainers)
+
+- **CI** (`.github/workflows/ci.yml`): on every push/PR, syntax-checks all JS,
+  validates the JSON, and smoke-tests the bridge (serve + `/health` + hook POST)
+  across Node 18/20/22.
+- **Publish** (`.github/workflows/publish.yml`): cutting a GitHub **Release**
+  runs `npm publish`. One-time setup: add a repo secret **`NPM_TOKEN`**
+  (npmjs.com → Access Tokens → *Automation*). Then bump `version` in
+  `package.json`, tag it, and publish a Release — the package ships automatically.
 
 ## Notes
 
