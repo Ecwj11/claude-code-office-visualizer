@@ -1,10 +1,12 @@
 name: Publish to npm
 
-# Publishes the package when you cut a GitHub Release.
-# Requires a repo secret NPM_TOKEN (npmjs.com → Access Tokens → Automation).
+# Publishes when you cut a GitHub Release, or manually via "Run workflow".
+# Requires a repo secret NPM_TOKEN (npmjs.com → Access Tokens → Automation,
+# or a Granular token with Packages: read + write).
 on:
   release:
     types: [published]
+  workflow_dispatch:
 
 jobs:
   npm:
@@ -17,7 +19,17 @@ jobs:
           node-version: 20
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Publish
-        run: npm publish --access public
+      - name: Check NPM_TOKEN is present
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "${NODE_AUTH_TOKEN}" ]; then
+            echo "::error::NPM_TOKEN secret is missing or empty. Add it at Settings → Secrets and variables → Actions (name exactly NPM_TOKEN; value: an npm Automation or Granular token that starts with npm_)."
+            exit 1
+          fi
+          echo "NPM_TOKEN is present."
+
+      - name: Publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public
