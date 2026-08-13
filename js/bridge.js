@@ -198,7 +198,7 @@
       OV.Events.emit({
         type: 'SUBAGENT_START',
         agent: id,
-        name: trunc(pretty, 14),
+        name: pretty,
         role: atype || 'Subagent',
         emoji: SUB_EMOJI[(this._subCount - 1) % SUB_EMOJI.length],
         color: SUB_COLOR[(this._subCount - 1) % SUB_COLOR.length],

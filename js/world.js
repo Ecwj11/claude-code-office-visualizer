@@ -248,6 +248,7 @@
       this.cardsEl.appendChild(el);
       agent.card = {
         el: el,
+        name: el.querySelector('.card-name'),
         badge: el.querySelector('.card-badge'),
         badgeText: el.querySelector('.badge-text'),
         task: el.querySelector('.card-task'),
@@ -259,10 +260,12 @@
       if (!c) return;
       c.el.className = 'agent-card state-' + agent.status.toLowerCase();
       c.badgeText.textContent = agent.status;
+      if (c.name) c.name.title = agent.name + (agent.role ? ' · ' + agent.role : '');
       let taskLine = '';
       if (agent.currentTask) taskLine = agent.currentTask;
       if (agent.currentTool) taskLine += (taskLine ? ' · ' : '') + agent.currentTool;
       c.task.textContent = taskLine;
+      c.task.title = taskLine; // hover reveals the full, un-truncated text
       c.task.hidden = !taskLine;
     },
 

@@ -60,13 +60,16 @@
         '<div class="agent-typing"><span></span><span></span><span></span></div>' +
       '</div>' +
       '<div class="agent-shadow"></div>' +
-      '<div class="agent-tag"><span class="agent-dot"></span>' + this.name + '</div>';
+      '<div class="agent-tag"><span class="agent-dot"></span><span class="agent-tag-name"></span></div>';
     floorEl.appendChild(el);
 
     this.el = el;
     this.bubbleEl = el.querySelector('.agent-bubble');
     this.bodyEl = el.querySelector('.agent-body');
     this.spriteEl = el.querySelector('.agent-sprite');
+    const nameEl = el.querySelector('.agent-tag-name');
+    nameEl.textContent = this.name; // textContent avoids HTML injection
+    nameEl.title = this.name;       // hover shows the full name if truncated
   };
 
   // ---- State -------------------------------------------------------------

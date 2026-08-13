@@ -37,9 +37,14 @@
     const W = OV.World;
     const used = {};
     W.agents.forEach((a) => { if (a.home) used[a.home] = true; });
-    const desks = ['DESK_BUILDER', 'DESK_DEBUGGER', 'DESK_TEST', 'DESK_VALIDATOR'];
-    for (let i = 0; i < desks.length; i++) if (!used[desks[i]]) return desks[i];
-    return null;
+    // Prefer the four team desks, then the overflow stations, so many
+    // concurrent subagents spread across the floor instead of stacking.
+    const spots = [
+      'DESK_BUILDER', 'DESK_DEBUGGER', 'DESK_TEST', 'DESK_VALIDATOR',
+      'STATION_1', 'STATION_2', 'STATION_3', 'STATION_4', 'STATION_5', 'STATION_6',
+    ];
+    for (let i = 0; i < spots.length; i++) if (!used[spots[i]]) return spots[i];
+    return 'CENTER_AREA'; // last resort if everything is taken
   }
 
   const Events = {

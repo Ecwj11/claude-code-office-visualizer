@@ -41,6 +41,15 @@
     DESK_DEBUGGER: { x: 16, y: 76, face: 'left', label: "Debugger's desk" },
     DESK_VALIDATOR: { x: 84, y: 76, face: 'right', label: "Validator's desk" },
     CENTER_AREA: { x: 50, y: 62, face: 'down', label: 'Center' },
+
+    // Overflow spots for dynamically-spawned subagents once the four team desks
+    // are taken — a compact grid in the open middle so nobody piles up.
+    STATION_1: { x: 34, y: 57, face: 'down', label: 'Station' },
+    STATION_2: { x: 50, y: 56, face: 'down', label: 'Station' },
+    STATION_3: { x: 66, y: 57, face: 'down', label: 'Station' },
+    STATION_4: { x: 34, y: 71, face: 'down', label: 'Station' },
+    STATION_5: { x: 50, y: 72, face: 'down', label: 'Station' },
+    STATION_6: { x: 66, y: 71, face: 'down', label: 'Station' },
   };
 
   // ---- Waypoint graph -----------------------------------------------------
@@ -87,6 +96,12 @@
     ['WP_R_MID', 'WP_BOT'],
     ['WP_BOT', 'DESK_DEBUGGER'],
     ['WP_BOT', 'DESK_VALIDATOR'],
+    ['WP_MID', 'STATION_1'],
+    ['WP_MID', 'STATION_2'],
+    ['WP_MID', 'STATION_3'],
+    ['WP_MID', 'STATION_4'],
+    ['WP_MID', 'STATION_5'],
+    ['WP_MID', 'STATION_6'],
   ];
 
   // ---- Agent definitions --------------------------------------------------
