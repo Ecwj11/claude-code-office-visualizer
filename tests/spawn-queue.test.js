@@ -22,10 +22,7 @@ test('a burst degrades to fast once the backlog exceeds the threshold', async ()
   for (let i = 0; i < 6; i++) all.push(q.enqueue(job));
   await Promise.all(all);
 
-  assert.equal(modes.length, 6);
-  assert.equal(modes[0], 'full', 'first spawn always gets the full ritual');
-  assert.ok(modes.includes('fast'), 'a six-deep burst degrades');
-  assert.equal(modes[modes.length - 1], 'full', 'the tail drains at full quality again');
+  assert.deepEqual(modes, ['full', 'fast', 'fast', 'full', 'full', 'full']);
 });
 
 test('jobs run strictly in order and one at a time', async () => {
@@ -46,6 +43,16 @@ test('a throwing job does not wedge the queue', async () => {
   const q = makeQueue();
   const seen = [];
   const bad = q.enqueue(() => { throw new Error('boom'); });
+  const good = q.enqueue(() => { seen.push('ran'); });
+  await bad.catch(() => {});
+  await good;
+  assert.deepEqual(seen, ['ran']);
+});
+
+test('a job returning a rejected promise does not wedge the queue', async () => {
+  const q = makeQueue();
+  const seen = [];
+  const bad = q.enqueue(() => Promise.reject(new Error('boom')));
   const good = q.enqueue(() => { seen.push('ran'); });
   await bad.catch(() => {});
   await good;
