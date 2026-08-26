@@ -17,18 +17,61 @@
 
   const STATES = OV.STATES;
 
+  // Resolve a live subagent's appearance from the active theme. Types the theme
+  // knows about borrow that character's art; everything else becomes a shadow
+  // clone of the orchestrator, which is the whole premise of the leaf theme.
+  function castFor(subagentType) {
+    const theme = OV.Themes && OV.Themes.active;
+    if (!theme) return null;
+
+    const base = theme.assets && theme.assets.base ? theme.assets.base : '';
+    const byId = {};
+    (theme.cast || []).forEach(function (c) { byId[c.id] = c; });
+
+    const mapped = theme.castByType ? theme.castByType[subagentType] : null;
+    const entry = mapped ? byId[mapped] : null;
+
+    if (entry) {
+      return {
+        name: entry.name,
+        emoji: entry.emoji,
+        sprite: entry.sprite ? base + entry.sprite : null,
+        color: entry.color,
+        isClone: false,
+      };
+    }
+
+    // A clone borrows the orchestrator's appearance. With Task 10 deferred there is
+    // no sprite, so this resolves to the orchestrator's emoji — which is exactly the
+    // intended reading: every unmapped subagent is a shadow clone of the boss.
+    // The office theme declares no castByType and no clone treatment, so it returns
+    // null here and keeps today's generic robot emoji.
+    const boss = byId.claude;
+    if (!boss || !theme.castByType) return null;
+    return {
+      name: subagentType || 'clone',
+      emoji: boss.emoji,
+      sprite: boss.sprite ? base + boss.sprite : null,
+      color: '#7fd1e8', // chakra blue marks a clone
+      isClone: true,
+    };
+  }
+
   function ensureAgent(evt) {
     const W = OV.World;
     let agent = W.byId[evt.agent];
     if (agent) return agent;
     // Dynamically spawn a new agent at the first free desk.
+    const cast = castFor(evt.role || evt.name || evt.agent);
     const def = {
       id: evt.agent,
       name: evt.name || evt.agent,
       role: evt.role || 'Agent',
-      emoji: evt.emoji || '🤖',
-      color: evt.color || '#9aa4b2',
+      emoji: evt.emoji || (cast && cast.emoji) || '🤖',
+      sprite: (cast && cast.sprite) || null,
+      color: evt.color || (cast && cast.color) || '#9aa4b2',
       home: evt.home || firstFreeDesk() || 'GATHER_SPOT',
+      isClone: !!(cast && cast.isClone),
     };
     return W.addAgent(def);
   }
@@ -48,6 +91,8 @@
   }
 
   const Events = {
+    castFor: castFor,
+
     emit: function (evt) {
       switch (evt.type) {
         case 'SUBAGENT_START': return this.onStart(evt);
