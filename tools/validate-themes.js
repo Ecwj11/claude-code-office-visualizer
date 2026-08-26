@@ -9,16 +9,10 @@ const fs = require('fs');
 const path = require('path');
 const { loadOV, ROOT } = require('./browser-module');
 
-const THEME_FILES = fs
-  .readdirSync(path.join(ROOT, 'js/themes'))
-  .filter((f) => f.endsWith('.js') && f !== 'index.js')
-  .map((f) => 'js/themes/' + f);
-
-const OV = loadOV(['js/config.js', 'js/nav.js', 'js/themes/index.js'].concat(THEME_FILES));
-
-let failures = 0;
-
-OV.Themes.list().forEach((theme) => {
+// Accumulates the list of problems for one theme. Pure with respect to the
+// filesystem check (which only reads, never writes) so it's directly testable
+// with in-memory theme fixtures — see tests/validate-themes.test.js.
+function problemsFor(OV, theme) {
   const problems = OV.Themes.validate(theme).errors.slice();
 
   // Asset check. A theme may legitimately reference no assets at all (the Hidden
@@ -59,17 +53,40 @@ OV.Themes.list().forEach((theme) => {
     if (p.length < 2) problems.push('slot is stranded (no route to ORCHESTRATOR_HOME): ' + slot);
   });
 
-  if (problems.length) {
-    failures++;
-    console.error('FAIL ' + theme.id);
-    problems.forEach((p) => console.error('  - ' + p));
-  } else {
-    console.log('ok   ' + theme.id + ' (' + theme.name + ')');
-  }
-});
-
-if (failures) {
-  console.error('\n' + failures + ' theme(s) invalid');
-  process.exit(1);
+  return problems;
 }
-console.log('\nall themes valid');
+
+function main() {
+  const THEME_FILES = fs
+    .readdirSync(path.join(ROOT, 'js/themes'))
+    .filter((f) => f.endsWith('.js') && f !== 'index.js')
+    .map((f) => 'js/themes/' + f);
+
+  const OV = loadOV(['js/config.js', 'js/nav.js', 'js/themes/index.js'].concat(THEME_FILES));
+
+  let failures = 0;
+
+  OV.Themes.list().forEach((theme) => {
+    const problems = problemsFor(OV, theme);
+
+    if (problems.length) {
+      failures++;
+      console.error('FAIL ' + theme.id);
+      problems.forEach((p) => console.error('  - ' + p));
+    } else {
+      console.log('ok   ' + theme.id + ' (' + theme.name + ')');
+    }
+  });
+
+  if (failures) {
+    console.error('\n' + failures + ' theme(s) invalid');
+    process.exit(1);
+  }
+  console.log('\nall themes valid');
+}
+
+if (require.main === module) {
+  main();
+}
+
+module.exports = { problemsFor };

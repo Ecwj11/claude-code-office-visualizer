@@ -152,8 +152,8 @@ start.command / start.sh / start.bat  double-click launchers (macOS / *nix / Win
 ## CI & releasing (maintainers)
 
 - **CI** (`.github/workflows/ci.yml`): on every push/PR, syntax-checks all JS,
-  validates the JSON, and smoke-tests the bridge (serve + `/health` + hook POST)
-  across Node 18/20/22.
+  runs the unit tests, validates themes, validates the JSON, and smoke-tests the
+  bridge (serve + `/health` + hook POST) across Node 18/20/22.
 - **Publish** (`.github/workflows/publish.yml`): cutting a GitHub **Release**
   runs `npm publish`. One-time setup: add a repo secret **`NPM_TOKEN`**
   (npmjs.com → Access Tokens → *Automation*). Then bump `version` in
