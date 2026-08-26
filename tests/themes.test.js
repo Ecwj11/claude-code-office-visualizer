@@ -130,3 +130,57 @@ test('leaf graph connects every slot to the orchestrator', () => {
     }
   });
 });
+
+// castFor: resolves a live subagent's appearance from the active theme. Pure,
+// theme-driven logic with no DOM dependency, so it's testable straight out of
+// the sandbox loader without a World/Agent stub.
+test('castFor: office returns null for every subagent type, even one with a matching cast id', () => {
+  const OV = loadOV([
+    'js/config.js', 'js/nav.js', 'js/themes/index.js',
+    'js/themes/office.js', 'js/themes/leaf.js', 'js/events.js',
+  ]);
+  OV.Themes.apply('office');
+  // Office DOES have a cast entry with id 'builder' — this must still be null,
+  // proving the guard keys off the theme declaring castByType, not off a cast
+  // id happening to exist. That distinction is what keeps office unchanged.
+  assert.equal(OV.Events.castFor('builder'), null);
+  assert.equal(OV.Events.castFor('anything-else'), null);
+});
+
+test('castFor: leaf maps a known subagent type to that character\'s look', () => {
+  const OV = loadOV([
+    'js/config.js', 'js/nav.js', 'js/themes/index.js',
+    'js/themes/office.js', 'js/themes/leaf.js', 'js/events.js',
+  ]);
+  OV.Themes.apply('leaf');
+  const cast = OV.Events.castFor('builder');
+  assert.equal(cast.emoji, '⚡');
+  assert.equal(cast.color, '#6ea8fe');
+  assert.equal(cast.isClone, false);
+});
+
+test('castFor: leaf turns an unmapped subagent type into a shadow clone of the orchestrator', () => {
+  const OV = loadOV([
+    'js/config.js', 'js/nav.js', 'js/themes/index.js',
+    'js/themes/office.js', 'js/themes/leaf.js', 'js/events.js',
+  ]);
+  OV.Themes.apply('leaf');
+  const cast = OV.Events.castFor('general-purpose');
+  assert.equal(cast.emoji, '🍥');
+  assert.equal(cast.color, '#7fd1e8');
+  assert.equal(cast.isClone, true);
+});
+
+test('castFor: leaf resolves an aliased subagent type to the target cast member', () => {
+  const OV = loadOV([
+    'js/config.js', 'js/nav.js', 'js/themes/index.js',
+    'js/themes/office.js', 'js/themes/leaf.js', 'js/events.js',
+  ]);
+  OV.Themes.apply('leaf');
+  // 'code-reviewer' has no cast entry of its own; castByType aliases it to 'validator'.
+  const cast = OV.Events.castFor('code-reviewer');
+  const validator = OV.Themes.get('leaf').cast.find((c) => c.id === 'validator');
+  assert.equal(cast.emoji, validator.emoji);
+  assert.equal(cast.color, validator.color);
+  assert.equal(cast.isClone, false);
+});
