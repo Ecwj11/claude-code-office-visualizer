@@ -67,9 +67,9 @@
       id: evt.agent,
       name: evt.name || evt.agent,
       role: evt.role || 'Agent',
-      emoji: evt.emoji || (cast && cast.emoji) || '🤖',
+      emoji: (cast && cast.emoji) || evt.emoji || '🤖',
       sprite: (cast && cast.sprite) || null,
-      color: evt.color || (cast && cast.color) || '#9aa4b2',
+      color: (cast && cast.color) || evt.color || '#9aa4b2',
       home: evt.home || firstFreeDesk() || 'GATHER_SPOT',
       isClone: !!(cast && cast.isClone),
     };
