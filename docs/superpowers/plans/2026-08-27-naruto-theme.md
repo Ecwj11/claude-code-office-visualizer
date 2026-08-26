@@ -2153,6 +2153,18 @@ OV.Themes.list().forEach((theme) => {
     if (!theme.slots[slot]) problems.push('strings key references unknown slot: ' + key);
   });
 
+  // castByType targets. A value naming a cast id that does not exist makes that
+  // subagent type fall through to the unmapped-clone path instead of borrowing the
+  // intended character — silently, with nothing to fail.
+  const castIds = {};
+  (theme.cast || []).forEach((c) => { castIds[c.id] = true; });
+  Object.keys(theme.castByType || {}).forEach((type) => {
+    const target = theme.castByType[type];
+    if (!castIds[target]) {
+      problems.push('castByType["' + type + '"] names unknown cast id: ' + target);
+    }
+  });
+
   OV.Nav.rebuild(theme.slots, theme.waypoints, theme.edges);
   OV.Themes.REQUIRED_SLOTS.forEach((slot) => {
     if (slot === 'ORCHESTRATOR_HOME') return;
