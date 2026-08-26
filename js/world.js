@@ -34,12 +34,8 @@
       this.logEl = document.getElementById('event-log');
       this.countEl = document.getElementById('active-count');
 
-      // Remember the starting roster so RESET can restore exactly it.
-      this._originalIds = new Set(OV.AGENT_DEFS.map((d) => d.id));
-      OV.AGENT_DEFS.forEach((def) => this.addAgent(def));
-      this.log('system', 'Office initialised · ' + this.agents.length + ' agents ready');
-      this.startLoop();
-      this.startAmbient();
+      const wanted = OV.Themes.remembered() || 'office';
+      if (!OV.Themes.apply(wanted)) OV.Themes.apply('office');
     },
 
     addAgent: function (def) {
@@ -63,6 +59,98 @@
       delete this.byId[id];
       this._wandering.delete(id);
       this._updateCount();
+    },
+
+    // ---- floor rendering (theme-driven) ----------------------------------
+    // Furniture is data, not markup. Each entry becomes one absolutely
+    // positioned element; `kind` selects the visual treatment defined in CSS.
+    renderFloor: function (theme) {
+      const floor = this.floorEl;
+      if (!floor) return;
+
+      const old = floor.querySelectorAll('.furn, .rug');
+      for (let i = 0; i < old.length; i++) old[i].remove();
+
+      (theme.furniture || []).forEach((f) => {
+        const el = document.createElement('div');
+        el.dataset.furn = f.id;
+        el.style.left = f.x + '%';
+        el.style.top = f.y + '%';
+
+        if (f.kind === 'rug') {
+          el.className = 'rug';
+          floor.prepend(el);
+          return;
+        }
+
+        el.className = 'furn ' + f.kind + (f.className ? ' ' + f.className : '');
+
+        if (f.kind === 'desk') {
+          const m = document.createElement('div');
+          m.className = 'monitor';
+          m.textContent = f.emoji || '💻';
+          el.appendChild(m);
+        } else if (f.kind === 'window') {
+          const v = document.createElement('div');
+          v.className = 'window-view';
+          el.appendChild(v);
+        } else if (f.kind === 'whiteboard') {
+          const s = document.createElement('div');
+          s.className = 'board-scribble';
+          el.appendChild(s);
+        } else if (f.emoji) {
+          const e = document.createElement('span');
+          e.className = f.kind === 'plant' ? 'furn-plant-emoji' : 'furn-emoji';
+          e.textContent = f.emoji;
+          el.appendChild(e);
+        }
+
+        if (f.label) {
+          const lab = document.createElement('span');
+          lab.className = 'furn-label';
+          lab.textContent = f.label; // textContent avoids HTML injection
+          el.appendChild(lab);
+        }
+
+        floor.prepend(el);
+      });
+    },
+
+    // Swap the whole floor in place. Deliberately does NOT touch OV.Bridge, so
+    // a live SSE run keeps streaming across a theme change.
+    applyTheme: function (theme) {
+      const wasRunning = this.running;
+      this.stopLoop();
+      this.clearAllTimers();
+      this.generation++;
+
+      this.agents.slice().forEach((a) => this.removeAgent(a.id));
+
+      const body = document.body;
+      body.dataset.theme = theme.id;
+
+      // Clear the previous theme's custom properties before applying this
+      // theme's, otherwise switching to a theme with a smaller palette leaves
+      // the old colors stuck on <body>.
+      (this._paletteKeys || []).forEach((k) => body.style.removeProperty(k));
+      this._paletteKeys = Object.keys(theme.palette || {});
+      this._paletteKeys.forEach((k) => {
+        body.style.setProperty(k, theme.palette[k]);
+      });
+      if (theme.assets && theme.assets.floor) {
+        body.style.setProperty('--floor-image', 'url("' + theme.assets.base + theme.assets.floor + '")');
+      } else {
+        body.style.removeProperty('--floor-image');
+      }
+
+      this.renderFloor(theme);
+
+      this._originalIds = new Set(OV.AGENT_DEFS.map((d) => d.id));
+      OV.AGENT_DEFS.forEach((def) => this.addAgent(def));
+
+      this.log('system', 'Theme · ' + theme.name);
+      this.startLoop();
+      this.startAmbient();
     },
 
     // ---- movement loop ---------------------------------------------------
