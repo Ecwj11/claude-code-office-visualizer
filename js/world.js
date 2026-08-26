@@ -190,7 +190,7 @@
       this._wandering.add(agent.id);
 
       // Pick somewhere interesting that isn't the agent's own desk.
-      const spots = ['WHITEBOARD', 'COFFEE_AREA', 'CENTER_AREA', 'WINDOW'];
+      const spots = ['THINK_SPOT', 'BREAK_SPOT', 'GATHER_SPOT', 'AMBIENT_SPOT'];
       // occasionally visit a peer's desk instead
       const peers = this.agents.filter((a) => a !== agent);
       let dest;
@@ -200,15 +200,16 @@
         intent = STATES.WAITING;
       } else {
         dest = spots[Math.floor(this._rand() * spots.length)];
-        intent = dest === 'WHITEBOARD' ? STATES.THINKING : STATES.WAITING;
+        intent = dest === 'THINK_SPOT' ? STATES.THINKING : STATES.WAITING;
       }
 
-      const chatter = {
-        WHITEBOARD: 'Reviewing the plan…',
-        COFFEE_AREA: '☕ break',
-        CENTER_AREA: 'Stretching',
-        WINDOW: 'Nice view',
+      const fallback = {
+        THINK_SPOT: 'Reviewing the plan…',
+        BREAK_SPOT: '☕ break',
+        GATHER_SPOT: 'Stretching',
+        AMBIENT_SPOT: 'Nice view',
       };
+      const line = OV.Themes.strings('ambient_' + dest, fallback[dest]);
 
       const done = () => { this._wandering.delete(agent.id); };
       // A wander already in flight when the simulation starts must yield: bail
@@ -218,7 +219,7 @@
       this.walk(agent, dest).then(() => {
         if (yielded()) return;
         agent.setState(intent);
-        if (chatter[dest]) agent.say(chatter[dest]);
+        if (line) agent.say(line);
         return this.delay(2500 + Math.floor(this._rand() * 3000));
       }).then(() => {
         if (yielded()) return;

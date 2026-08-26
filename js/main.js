@@ -36,11 +36,11 @@
       const claude = OV.World.byId.claude;
       if (!claude) return;
       claude.setState(OV.STATES.THINKING, { task: 'Thinking…' });
-      OV.World.walk(claude, 'WHITEBOARD').then(function () {
+      OV.World.walk(claude, 'THINK_SPOT').then(function () {
         claude.say('Hmm, let me think…');
         return OV.World.delay(3000);
       }).then(function () {
-        return OV.World.walk(claude, 'CLAUDE_DESK', { state: OV.STATES.IDLE });
+        return OV.World.walk(claude, 'ORCHESTRATOR_HOME', { state: OV.STATES.IDLE });
       });
     });
 

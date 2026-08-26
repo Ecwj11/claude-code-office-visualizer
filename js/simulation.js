@@ -54,7 +54,7 @@
 
       // 1. Claude thinks at the whiteboard
       claude.setState(STATES.THINKING, { task: 'Planning the task' });
-      await W.walk(claude, 'WHITEBOARD'); if (!ok()) return;
+      await W.walk(claude, 'THINK_SPOT'); if (!ok()) return;
       claude.say('Let me plan this out…');
       await W.delay(2200); if (!ok()) return;
 
@@ -65,7 +65,7 @@
       await E.emit({ type: 'PRE_TOOL_USE', agent: 'builder', tool: 'Edit', task: 'src/api/routes.ts' }); if (!ok()) return;
 
       // Claude returns to its desk to orchestrate
-      W.walk(claude, 'CLAUDE_DESK', { state: STATES.WORKING, task: 'Orchestrating' });
+      W.walk(claude, 'ORCHESTRATOR_HOME', { state: STATES.WORKING, task: 'Orchestrating' });
       await W.delay(2600); if (!ok()) return;
 
       // 3. Claude spawns Debugger
@@ -95,7 +95,7 @@
       await W.delay(1400); if (!ok()) return;
 
       // 6. Test walks to Claude to report -> Claude reacts
-      await W.walk(test, 'CLAUDE_DESK'); if (!ok()) return;
+      await W.walk(test, 'ORCHESTRATOR_HOME'); if (!ok()) return;
       test.say('Tests failing on /users');
       claude.setState(STATES.THINKING, { task: 'Triaging failure' });
       claude.say('Debugger — take a look');

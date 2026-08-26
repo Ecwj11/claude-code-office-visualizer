@@ -28,7 +28,7 @@
       role: evt.role || 'Agent',
       emoji: evt.emoji || '🤖',
       color: evt.color || '#9aa4b2',
-      home: evt.home || firstFreeDesk() || 'CENTER_AREA',
+      home: evt.home || firstFreeDesk() || 'GATHER_SPOT',
     };
     return W.addAgent(def);
   }
@@ -40,11 +40,11 @@
     // Prefer the four team desks, then the overflow stations, so many
     // concurrent subagents spread across the floor instead of stacking.
     const spots = [
-      'DESK_BUILDER', 'DESK_DEBUGGER', 'DESK_TEST', 'DESK_VALIDATOR',
-      'STATION_1', 'STATION_2', 'STATION_3', 'STATION_4', 'STATION_5', 'STATION_6',
+      'WORKER_1', 'WORKER_2', 'WORKER_3', 'WORKER_4',
+      'OVERFLOW_1', 'OVERFLOW_2', 'OVERFLOW_3', 'OVERFLOW_4', 'OVERFLOW_5', 'OVERFLOW_6',
     ];
     for (let i = 0; i < spots.length; i++) if (!used[spots[i]]) return spots[i];
-    return 'CENTER_AREA'; // last resort if everything is taken
+    return 'GATHER_SPOT'; // last resort if everything is taken
   }
 
   const Events = {
@@ -106,7 +106,7 @@
         agent.setState(STATES.IDLE, { task: null, tool: null });
         return Promise.resolve(agent);
       }
-      return W.walk(agent, 'CLAUDE_DESK').then(() => {
+      return W.walk(agent, 'ORCHESTRATOR_HOME').then(() => {
         if (!W.alive(gen)) return;
         agent.say(evt.message || 'Task completed ✅');
         claude.say('Nice work');

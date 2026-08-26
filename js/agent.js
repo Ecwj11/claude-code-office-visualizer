@@ -30,7 +30,7 @@
     this.facing = 'down'; // down | up | left | right
 
     // Movement (all coordinates are % of the office floor)
-    const start = OV.LOCATIONS[this.home] || OV.LOCATIONS.CENTER_AREA;
+    const start = OV.LOCATIONS[this.home] || OV.LOCATIONS.GATHER_SPOT;
     this.position = { x: start.x, y: start.y };
     this.targetPosition = { x: start.x, y: start.y };
     this.path = null;
@@ -223,7 +223,7 @@
     this.hideBubble();
     this._settle({ cancelled: true }); // release any pending walk promise
     this._stopWalking();
-    const loc = OV.LOCATIONS[this.home] || OV.LOCATIONS.CENTER_AREA;
+    const loc = OV.LOCATIONS[this.home] || OV.LOCATIONS.GATHER_SPOT;
     this.position.x = loc.x;
     this.position.y = loc.y;
     this.facing = loc.face || 'down';
