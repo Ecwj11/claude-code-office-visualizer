@@ -1512,7 +1512,21 @@ git commit -m "feat: add shadow-clone spawn and poof despawn effects"
 
 ---
 
-### Task 10: Generate the Hidden Leaf assets
+### Task 10: Generate the Hidden Leaf assets — DEFERRED
+
+> **STATUS: DEFERRED, 2026-08-27.** The Higgsfield workspace has zero credits, so the
+> six images could not be generated. Rather than block the feature or fake the assets,
+> the user chose to ship the Hidden Leaf theme with its emoji cast and CSS village
+> palette now, and add artwork in a follow-up. Task 7's sprite-fallback path makes this
+> work with no further code changes: a cast entry with no `sprite` simply renders its
+> emoji.
+>
+> **Do not implement this task.** Tasks 11, 12, and 15 have been amended accordingly.
+> When credits exist, the follow-up is: run this task as written, add `sprite:` fields
+> to the five leaf cast entries, add the `assets` block to the theme, and add `"assets/"`
+> to `package.json`'s `files`. Nothing else changes.
+
+### Task 10 (original, for the follow-up)
 
 **Files:**
 - Create: `assets/themes/leaf/village-floor.webp`
@@ -1605,10 +1619,6 @@ git commit -m "assets: add generated Hidden Leaf village and character art"
 Append to `tests/themes.test.js`:
 
 ```js
-const fs = require('node:fs');
-const path = require('node:path');
-const { ROOT } = require('../tools/browser-module');
-
 test('leaf theme satisfies the slot contract', () => {
   const OV = loadOV(['js/config.js', 'js/nav.js', 'js/themes/index.js', 'js/themes/leaf.js']);
   const leaf = OV.Themes.get('leaf');
@@ -1621,20 +1631,6 @@ test('leaf theme uses the theme-invariant agent ids', () => {
   const OV = loadOV(['js/config.js', 'js/nav.js', 'js/themes/index.js', 'js/themes/leaf.js']);
   const ids = OV.Themes.get('leaf').cast.map((c) => c.id).sort();
   assert.deepEqual(ids, ['builder', 'claude', 'debugger', 'test', 'validator']);
-});
-
-test('every asset referenced by a theme exists on disk', () => {
-  const OV = loadOV(['js/config.js', 'js/nav.js', 'js/themes/index.js', 'js/themes/office.js', 'js/themes/leaf.js']);
-  OV.Themes.list().forEach((theme) => {
-    const base = (theme.assets && theme.assets.base) || '';
-    const files = [];
-    if (theme.assets && theme.assets.floor) files.push(theme.assets.floor);
-    (theme.cast || []).forEach((c) => { if (c.sprite) files.push(c.sprite); });
-    files.forEach((f) => {
-      const full = path.join(ROOT, base + f);
-      assert.ok(fs.existsSync(full), 'missing asset for theme ' + theme.id + ': ' + base + f);
-    });
-  });
 });
 
 test('leaf graph connects every slot to the orchestrator', () => {
@@ -1756,11 +1752,14 @@ Expected: FAIL — `js/themes/leaf.js` does not exist.
     ],
 
     cast: [
-      { slot: 'ORCHESTRATOR_HOME', id: 'claude', name: nm('Naruto', 'Hokage'), role: 'Orchestrator', emoji: '🍥', sprite: 'naruto.webp', color: '#ff9c3f' },
-      { slot: 'WORKER_1', id: 'builder', name: nm('Sasuke', 'Blade'), role: 'Engineer', emoji: '⚡', sprite: 'sasuke.webp', color: '#6ea8fe' },
-      { slot: 'WORKER_2', id: 'test', name: nm('Sakura', 'Petal'), role: 'QA', emoji: '🌸', sprite: 'sakura.webp', color: '#f48fb1' },
-      { slot: 'WORKER_3', id: 'debugger', name: nm('Kakashi', 'Copy-nin'), role: 'Fixer', emoji: '📖', sprite: 'kakashi.webp', color: '#b0b7c6' },
-      { slot: 'WORKER_4', id: 'validator', name: nm('Shikamaru', 'Shadow'), role: 'Reviewer', emoji: '🧩', sprite: 'shikamaru.webp', color: '#9ccc65' },
+      // No `sprite` fields: Task 10 is deferred, so the cast renders as emoji via the
+      // fallback path built in Task 7. Adding artwork later means adding `sprite:` here
+      // and an `assets` block below — no other change.
+      { slot: 'ORCHESTRATOR_HOME', id: 'claude', name: nm('Naruto', 'Hokage'), role: 'Orchestrator', emoji: '🍥', color: '#ff9c3f' },
+      { slot: 'WORKER_1', id: 'builder', name: nm('Sasuke', 'Blade'), role: 'Engineer', emoji: '⚡', color: '#6ea8fe' },
+      { slot: 'WORKER_2', id: 'test', name: nm('Sakura', 'Petal'), role: 'QA', emoji: '🌸', color: '#f48fb1' },
+      { slot: 'WORKER_3', id: 'debugger', name: nm('Kakashi', 'Copy-nin'), role: 'Fixer', emoji: '📖', color: '#b0b7c6' },
+      { slot: 'WORKER_4', id: 'validator', name: nm('Shikamaru', 'Shadow'), role: 'Reviewer', emoji: '🧩', color: '#9ccc65' },
     ],
 
     // Live subagents arrive identified by subagent_type. Mapped types borrow a
@@ -1782,7 +1781,8 @@ Expected: FAIL — `js/themes/leaf.js` does not exist.
       ambient_AMBIENT_SPOT: 'Watching the gate',
     },
 
-    assets: { base: 'assets/themes/leaf/', floor: 'village-floor.webp' },
+    // No `assets` block while Task 10 is deferred. `--floor-image` therefore stays
+    // unset and `.office-floor` falls back to the palette gradient below.
 
     palette: {
       '--floor': '#3f7d4a',
@@ -1858,12 +1858,17 @@ Insert above `ensureAgent`:
       };
     }
 
+    // A clone borrows the orchestrator's appearance. With Task 10 deferred there is
+    // no sprite, so this resolves to the orchestrator's emoji — which is exactly the
+    // intended reading: every unmapped subagent is a shadow clone of the boss.
+    // The office theme declares no castByType and no clone treatment, so it returns
+    // null here and keeps today's generic robot emoji.
     const boss = byId.claude;
-    if (!boss || !boss.sprite) return null; // office theme: keep the robot emoji
+    if (!boss || !theme.castByType) return null;
     return {
       name: subagentType || 'clone',
       emoji: boss.emoji,
-      sprite: base + boss.sprite,
+      sprite: boss.sprite ? base + boss.sprite : null,
       color: '#7fd1e8', // chakra blue marks a clone
       isClone: true,
     };
@@ -2129,12 +2134,23 @@ let failures = 0;
 OV.Themes.list().forEach((theme) => {
   const problems = OV.Themes.validate(theme).errors.slice();
 
+  // Asset check. A theme may legitimately reference no assets at all (the Hidden
+  // Leaf theme ships emoji-only while artwork is deferred); only what IS referenced
+  // must exist on disk.
   const base = (theme.assets && theme.assets.base) || '';
   const assets = [];
   if (theme.assets && theme.assets.floor) assets.push(theme.assets.floor);
   (theme.cast || []).forEach((c) => { if (c.sprite) assets.push(c.sprite); });
   assets.forEach((a) => {
     if (!fs.existsSync(path.join(ROOT, base + a))) problems.push('missing asset: ' + base + a);
+  });
+
+  // Ambient-string key agreement. `_wander` looks up 'ambient_' + slot, so a typo'd
+  // key silently falls back to the in-code default forever and no test would fail.
+  Object.keys(theme.strings || {}).forEach((key) => {
+    if (key.indexOf('ambient_') !== 0) return;
+    const slot = key.slice('ambient_'.length);
+    if (!theme.slots[slot]) problems.push('strings key references unknown slot: ' + key);
   });
 
   OV.Nav.rebuild(theme.slots, theme.waypoints, theme.edges);
