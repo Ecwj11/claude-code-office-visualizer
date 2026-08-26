@@ -80,3 +80,26 @@ test('apply publishes the layout and rebuilds navigation', () => {
   assert.ok(OV.Nav.nodes.WP);
   assert.equal(OV.AGENT_DEFS[0].home, 'ORCHESTRATOR_HOME');
 });
+
+test('office theme satisfies the slot contract and keeps v1.0.2 coordinates', () => {
+  const OV = loadOV(['js/config.js', 'js/nav.js', 'js/themes/index.js', 'js/themes/office.js']);
+  const office = OV.Themes.get('office');
+  assert.ok(office, 'office theme is registered');
+  assert.deepEqual(OV.Themes.validate(office).errors, []);
+
+  assert.deepEqual(office.slots.ORCHESTRATOR_HOME, { x: 50, y: 26, face: 'up', label: "Claude's desk" });
+  assert.deepEqual(office.slots.THINK_SPOT, { x: 11, y: 22, face: 'left', label: 'Whiteboard' });
+  assert.deepEqual(office.slots.OVERFLOW_5, { x: 50, y: 72, face: 'down', label: 'Station' });
+
+  const ids = office.cast.map((c) => c.id).sort();
+  assert.deepEqual(ids, ['builder', 'claude', 'debugger', 'test', 'validator']);
+});
+
+test('office theme routes builder to the orchestrator without crossing a desk', () => {
+  const OV = loadOV(['js/config.js', 'js/nav.js', 'js/themes/index.js', 'js/themes/office.js']);
+  OV.Themes.apply('office');
+  const path = OV.Nav.findPath('WORKER_1', 'ORCHESTRATOR_HOME');
+  assert.ok(path.length > 2, 'route goes through the hallway graph, not straight through furniture');
+  assert.equal(path[0], 'WORKER_1');
+  assert.equal(path[path.length - 1], 'ORCHESTRATOR_HOME');
+});
