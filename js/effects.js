@@ -55,5 +55,93 @@
     });
   };
 
-  OV.Effects = { SpawnQueue: SpawnQueue };
+  const SMOKE_MS = 250;
+
+  function smokeAt(x, y) {
+    const floor = OV.World && OV.World.floorEl;
+    if (!floor) return;
+    const el = document.createElement('div');
+    el.className = 'jutsu-smoke';
+    el.style.left = x + '%';
+    el.style.top = y + '%';
+    floor.appendChild(el);
+    const t = setTimeout(function () {
+      if (el.parentNode) el.parentNode.removeChild(el);
+    }, SMOKE_MS + 300);
+    if (OV.World && OV.World.trackTimer) OV.World.trackTimer(t);
+  }
+
+  // The shadow-clone ritual. `mode` comes from the queue: 'full' plays the
+  // whole sequence, 'fast' collapses it so a burst of parallel Task dispatches
+  // never leaves the visuals more than about a second behind reality.
+  function jutsu(ctx) {
+    const W = OV.World;
+    const clone = ctx.agent;
+    const boss = ctx.orchestrator;
+
+    if (!boss || ctx.mode === 'fast') {
+      const at = OV.LOCATIONS[clone.home] || OV.LOCATIONS.GATHER_SPOT;
+      smokeAt(at.x, at.y);
+      clone.el.classList.add('is-clone');
+      return W.delay(SMOKE_MS);
+    }
+
+    boss.el.classList.add('jutsu-seal');
+    clone.el.classList.add('is-clone', 'is-materialising');
+
+    // Park the clone next to the orchestrator; it walks to its own slot after.
+    const dest = clone.home;
+    clone.position.x = boss.position.x + 6;
+    clone.position.y = boss.position.y;
+    clone.render();
+
+    return W.delay(300)
+      .then(function () {
+        boss.say('Kage Bunshin no Jutsu!');
+        return W.delay(100);
+      })
+      .then(function () {
+        smokeAt(boss.position.x + 6, boss.position.y);
+        return W.delay(SMOKE_MS);
+      })
+      .then(function () {
+        clone.el.classList.remove('is-materialising');
+        return W.delay(200);
+      })
+      .then(function () {
+        boss.el.classList.remove('jutsu-seal');
+        clone.walkTo(dest);
+        return W.delay(300);
+      });
+  }
+
+  function none() { return Promise.resolve(); }
+
+  function play(name, ctx) {
+    const fn = EFFECTS[name] || none;
+    return Promise.resolve(fn(ctx)).catch(function (err) {
+      console.warn('effects: spawn effect failed', name, err);
+    });
+  }
+
+  function poof(agent) {
+    smokeAt(agent.position.x, agent.position.y);
+    agent.el.classList.add('is-poofing');
+    return (OV.World ? OV.World.delay(SMOKE_MS) : Promise.resolve());
+  }
+
+  function despawn(name, agent) {
+    if (name !== 'poof') return Promise.resolve();
+    return poof(agent).catch(function () { /* never block agent removal */ });
+  }
+
+  const EFFECTS = { none: none, jutsu: jutsu };
+
+  OV.Effects = {
+    SpawnQueue: SpawnQueue,
+    queue: new SpawnQueue({ fastThreshold: 2 }),
+    play: play,
+    despawn: despawn,
+    smokeAt: smokeAt,
+  };
 })(window.OV = window.OV || {});

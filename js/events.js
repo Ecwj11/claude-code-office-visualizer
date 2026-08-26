@@ -67,6 +67,19 @@
       W.log(agent.id, agent.name + ' spawned');
       agent.say('Hi 👋');
       agent.setState(STATES.WALKING);
+
+      const theme = OV.Themes.active;
+      const spawnFx = theme && theme.effects ? theme.effects.spawn : 'none';
+      if (spawnFx && spawnFx !== 'none') {
+        OV.Effects.queue.enqueue(function (mode) {
+          return OV.Effects.play(spawnFx, {
+            agent: agent,
+            orchestrator: OV.World.byId.claude,
+            mode: mode,
+          });
+        });
+      }
+
       return W.walk(agent, agent.home, { state: STATES.WAITING, task: 'Ready' });
     },
 
@@ -119,7 +132,14 @@
         // Retire subagents spawned at runtime (e.g. live Task subagents) so the
         // office doesn't accumulate idle desks. The original roster stays.
         if (W._originalIds && !W._originalIds.has(agent.id)) {
-          W.delay(1200).then(() => { if (W.alive(gen)) W.removeAgent(agent.id); });
+          return W.delay(1200).then(() => {
+            if (!W.alive(gen)) return;
+            const theme = OV.Themes.active;
+            const fx = theme && theme.effects ? theme.effects.despawn : 'none';
+            return OV.Effects.despawn(fx, agent).then(() => {
+              if (W.alive(gen)) W.removeAgent(agent.id);
+            });
+          });
         }
       });
     },
