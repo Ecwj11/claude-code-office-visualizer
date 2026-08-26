@@ -103,3 +103,30 @@ test('office theme routes builder to the orchestrator without crossing a desk', 
   assert.equal(path[0], 'WORKER_1');
   assert.equal(path[path.length - 1], 'ORCHESTRATOR_HOME');
 });
+
+test('leaf theme satisfies the slot contract', () => {
+  const OV = loadOV(['js/config.js', 'js/nav.js', 'js/themes/index.js', 'js/themes/leaf.js']);
+  const leaf = OV.Themes.get('leaf');
+  assert.ok(leaf, 'leaf theme is registered');
+  assert.deepEqual(OV.Themes.validate(leaf).errors, []);
+  assert.deepEqual(leaf.effects, { spawn: 'jutsu', despawn: 'poof' });
+});
+
+test('leaf theme uses the theme-invariant agent ids', () => {
+  const OV = loadOV(['js/config.js', 'js/nav.js', 'js/themes/index.js', 'js/themes/leaf.js']);
+  const ids = OV.Themes.get('leaf').cast.map((c) => c.id).sort();
+  assert.deepEqual(ids, ['builder', 'claude', 'debugger', 'test', 'validator']);
+});
+
+test('leaf graph connects every slot to the orchestrator', () => {
+  const OV = loadOV(['js/config.js', 'js/nav.js', 'js/themes/index.js', 'js/themes/leaf.js']);
+  OV.Themes.apply('leaf');
+  OV.Themes.REQUIRED_SLOTS.forEach((slot) => {
+    const p = OV.Nav.findPath(slot, 'ORCHESTRATOR_HOME');
+    assert.ok(p.length >= 1 && p[p.length - 1] === 'ORCHESTRATOR_HOME',
+      slot + ' cannot reach ORCHESTRATOR_HOME');
+    if (slot !== 'ORCHESTRATOR_HOME') {
+      assert.ok(p.length > 1, slot + ' is stranded (no route found)');
+    }
+  });
+});
