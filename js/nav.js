@@ -7,32 +7,46 @@
  * graph edge is a desk-free straight line, any route made only of graph edges
  * is automatically obstacle-free. Swapping in a real planner later means
  * replacing `route()` — nothing else in the app needs to change.
+ *
+ * rebuild(slots, waypoints, edges) makes the graph swappable at runtime for
+ * theme switching. It replaces the Nav object's node table and recalculates
+ * adjacency; all route and pathfinding functions read the current graph.
  */
 (function (OV) {
   'use strict';
 
-  // Merge named locations and hallway waypoints into one node table.
-  const nodes = {};
-  Object.keys(OV.LOCATIONS).forEach(function (name) {
-    nodes[name] = { x: OV.LOCATIONS[name].x, y: OV.LOCATIONS[name].y };
-  });
-  Object.keys(OV.WAYPOINTS).forEach(function (name) {
-    nodes[name] = { x: OV.WAYPOINTS[name].x, y: OV.WAYPOINTS[name].y };
-  });
+  // Live graph state. `rebuild` replaces these wholesale; every read below and
+  // in other modules goes through the Nav object, so a theme switch takes
+  // effect immediately without re-loading any script.
+  let nodes = {};
+  let adj = {};
 
-  // Undirected adjacency list.
-  const adj = {};
-  Object.keys(nodes).forEach(function (n) { adj[n] = []; });
-  OV.EDGES.forEach(function (pair) {
-    const a = pair[0];
-    const b = pair[1];
-    if (!nodes[a] || !nodes[b]) {
-      console.warn('nav: edge references unknown node', pair);
-      return;
-    }
-    if (adj[a].indexOf(b) === -1) adj[a].push(b);
-    if (adj[b].indexOf(a) === -1) adj[b].push(a);
-  });
+  function rebuild(slots, waypoints, edges) {
+    nodes = {};
+    adj = {};
+
+    Object.keys(slots || {}).forEach(function (name) {
+      nodes[name] = { x: slots[name].x, y: slots[name].y };
+    });
+    Object.keys(waypoints || {}).forEach(function (name) {
+      nodes[name] = { x: waypoints[name].x, y: waypoints[name].y };
+    });
+
+    Object.keys(nodes).forEach(function (n) { adj[n] = []; });
+    (edges || []).forEach(function (pair) {
+      const a = pair[0];
+      const b = pair[1];
+      if (!nodes[a] || !nodes[b]) {
+        console.warn('nav: edge references unknown node', pair);
+        return;
+      }
+      if (adj[a].indexOf(b) === -1) adj[a].push(b);
+      if (adj[b].indexOf(a) === -1) adj[b].push(a);
+    });
+
+    Nav.nodes = nodes; // re-published so callers reading Nav.nodes see the new graph
+    return Nav;
+  }
 
   function dist(a, b) {
     const dx = a.x - b.x;
@@ -50,8 +64,6 @@
     return best;
   }
 
-  // Dijkstra shortest path (by euclidean edge length). Returns an array of node
-  // names from `start` to `goal` inclusive, or [goal] if unreachable/same.
   function findPath(start, goal) {
     if (start === goal) return [goal];
     const dst = {};
@@ -61,7 +73,6 @@
     dst[start] = 0;
 
     while (true) {
-      // pick nearest unvisited
       let u = null;
       let uD = Infinity;
       Object.keys(dst).forEach(function (n) {
@@ -86,12 +97,6 @@
     return path;
   }
 
-  /*
-   * route(currentPos, destName) -> array of {x, y} world points.
-   * The agent should move through these points in order. The first point is the
-   * agent's current position (so movement starts smoothly from wherever it is),
-   * the last is the destination location.
-   */
   function route(currentPos, destName) {
     if (!nodes[destName]) {
       console.warn('nav: unknown destination', destName);
@@ -100,18 +105,24 @@
     const start = nearestNode(currentPos);
     const names = findPath(start, destName);
     const pts = names.map(function (n) { return { x: nodes[n].x, y: nodes[n].y }; });
-    // Prepend the true current position unless we're already sitting on `start`.
     if (dist(currentPos, nodes[start]) > 0.5) {
       pts.unshift({ x: currentPos.x, y: currentPos.y });
     }
     return pts;
   }
 
-  OV.Nav = {
+  const Nav = {
     nodes: nodes,
+    rebuild: rebuild,
     route: route,
     findPath: findPath,
     nearestNode: nearestNode,
     dist: dist,
   };
+
+  // Build once from whatever config is present at load time. After Task 4 the
+  // active theme drives this instead.
+  if (OV.LOCATIONS) rebuild(OV.LOCATIONS, OV.WAYPOINTS, OV.EDGES);
+
+  OV.Nav = Nav;
 })(window.OV = window.OV || {});
