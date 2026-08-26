@@ -214,10 +214,19 @@
     // z-order by vertical position so lower agents overlap higher ones.
     el.style.zIndex = String(100 + Math.round(this.position.y));
 
-    // state class
-    el.className = 'agent state-' + this.status.toLowerCase() +
-      ' anim-' + this.animationState +
-      ' face-' + this.facing;
+    // state class — preserve classes owned by other systems (effects add
+    // is-clone, is-poofing, jutsu-seal...). render() runs every frame, so it
+    // must not clobber them.
+    const managed = /^(state|anim|face)-/;
+    const kept = [];
+    for (let i = 0; i < el.classList.length; i++) {
+      const c = el.classList[i];
+      if (c !== 'agent' && !managed.test(c)) kept.push(c);
+    }
+    el.className = ['agent',
+      'state-' + this.status.toLowerCase(),
+      'anim-' + this.animationState,
+      'face-' + this.facing].concat(kept).join(' ');
   };
 
   // Reset to a clean state at the home desk.

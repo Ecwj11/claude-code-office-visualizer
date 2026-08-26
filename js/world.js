@@ -68,7 +68,9 @@
       const floor = this.floorEl;
       if (!floor) return;
 
-      const old = floor.querySelectorAll('.furn, .rug');
+      // .jutsu-smoke is included so a theme switch mid-animation can't strand
+      // an effect element that was appended straight to the floor.
+      const old = floor.querySelectorAll('.furn, .rug, .jutsu-smoke');
       for (let i = 0; i < old.length; i++) old[i].remove();
 
       (theme.furniture || []).forEach((f) => {
@@ -401,6 +403,12 @@
         .filter((a) => !this._originalIds.has(a.id))
         .forEach((a) => this.removeAgent(a.id));
       this.agents.forEach((a) => a.resetToHome());
+      // clearAllTimers() above cancels a smoke element's removal timeout
+      // without detaching the element itself; sweep any left mid-animation
+      // so a RESET during the ~550ms smoke window can't strand a node.
+      if (this.floorEl) {
+        this.floorEl.querySelectorAll('.jutsu-smoke').forEach((el) => el.remove());
+      }
       if (this.logEl) this.logEl.innerHTML = '';
       this.log('system', 'Reset · agents returned to desks');
       // restart ambient life on the fresh generation
