@@ -342,6 +342,16 @@ html, body {
 .agent.face-up .agent-sprite { transform: translateY(-1px) scale(.96); }
 .agent.face-down .agent-sprite { transform: translateY(1px); }
 
+/* image sprites (themes that ship art); emoji themes are unaffected */
+.agent-sprite.has-image {
+  width: 42px;
+  height: 42px;
+  font-size: 0;
+  background-repeat: no-repeat;
+  background-position: center bottom;
+  background-size: contain;
+}
+
 /* shadow */
 .agent-shadow {
   width: 26px; height: 8px;

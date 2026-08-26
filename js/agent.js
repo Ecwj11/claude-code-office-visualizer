@@ -18,6 +18,7 @@
     this.name = def.name || this.id;
     this.role = def.role || 'Agent';
     this.emoji = def.emoji || '🙂';
+    this.sprite = def.sprite || null; // image path; null means render the emoji
     this.color = def.color || '#8ab4f8';
     this.home = def.home; // navigation-point name of this agent's desk
     this.orchestrator = !!def.orchestrator;
@@ -56,7 +57,7 @@
     el.innerHTML =
       '<div class="agent-bubble" hidden></div>' +
       '<div class="agent-body">' +
-        '<div class="agent-sprite">' + this.emoji + '</div>' +
+        '<div class="agent-sprite"></div>' +
         '<div class="agent-typing"><span></span><span></span><span></span></div>' +
       '</div>' +
       '<div class="agent-shadow"></div>' +
@@ -67,6 +68,7 @@
     this.bubbleEl = el.querySelector('.agent-bubble');
     this.bodyEl = el.querySelector('.agent-body');
     this.spriteEl = el.querySelector('.agent-sprite');
+    this._paintSprite();
     const nameEl = el.querySelector('.agent-tag-name');
     nameEl.textContent = this.name; // textContent avoids HTML injection
     nameEl.title = this.name;       // hover shows the full name if truncated
@@ -233,6 +235,32 @@
     this.status = STATES.IDLE;
     this.render();
     if (typeof this.onChange === 'function') this.onChange(this, {});
+  };
+
+  // Sprite art: an image when the theme supplies one, the emoji otherwise. A
+  // failed image load falls back to the emoji rather than showing a broken box.
+  Agent.prototype._paintSprite = function () {
+    const el = this.spriteEl;
+    if (!this.sprite) {
+      el.classList.remove('has-image');
+      el.textContent = this.emoji;
+      return;
+    }
+    const probe = new Image();
+    const self = this;
+    probe.onload = function () {
+      el.textContent = '';
+      el.classList.add('has-image');
+      el.style.backgroundImage = 'url("' + self.sprite + '")';
+    };
+    probe.onerror = function () {
+      console.warn('agent: sprite failed to load, falling back to emoji', self.sprite);
+      el.classList.remove('has-image');
+      el.style.backgroundImage = '';
+      el.textContent = self.emoji;
+    };
+    el.textContent = this.emoji; // shown until the image resolves
+    probe.src = this.sprite;
   };
 
   OV.Agent = Agent;
