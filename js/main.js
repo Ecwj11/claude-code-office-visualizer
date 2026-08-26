@@ -76,6 +76,30 @@
     // plain static server / file:// don't spam retries at a missing endpoint.
     if (location.port === '4319') { OV.Bridge.connect(); refreshLiveBtn(); }
 
+    // Theme toggle. Cycles the registered themes; the label names the theme the
+    // click will switch TO, so the user always sees where the button leads.
+    const themeBtn = document.getElementById('btn-theme');
+    function nextTheme() {
+      const all = OV.Themes.list();
+      const activeId = OV.Themes.active ? OV.Themes.active.id : null;
+      const i = all.findIndex(function (t) { return t.id === activeId; });
+      return all[(i + 1) % all.length];
+    }
+    function refreshThemeBtn() {
+      if (!themeBtn) return;
+      const next = nextTheme();
+      themeBtn.textContent = next ? next.name.toUpperCase() : 'THEME';
+      themeBtn.title = next ? 'Switch to ' + next.name : '';
+    }
+    if (themeBtn) themeBtn.addEventListener('click', function () {
+      const next = nextTheme();
+      if (!next) return;
+      OV.Simulation.stop();
+      OV.Themes.apply(next.id);
+      refreshThemeBtn();
+    });
+    refreshThemeBtn();
+
     // Expose for console tinkering / real-event bridge.
     window.OfficeVisualizer = OV;
   });

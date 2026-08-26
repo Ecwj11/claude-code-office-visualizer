@@ -535,6 +535,9 @@ html, body {
   vertical-align: bottom;
 }
 
+/* label-only furniture: used by themes whose scenery is baked into the floor art */
+.furn.hotspot .furn-label { background: rgba(8, 11, 18, 0.45); }
+
 /* =========================================================================
    Event log (bottom)
    ========================================================================= */
