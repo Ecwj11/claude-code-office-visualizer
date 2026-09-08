@@ -134,6 +134,6 @@
       '--accent': '#ff9c3f',
     },
 
-    effects: { spawn: 'jutsu', despawn: 'poof' },
+    effects: { spawn: 'jutsu', despawn: 'poof', spawnSound: 'assets/themes/leaf/shadow_clone_jutsu.mp3' },
   });
 })(window.OV = window.OV || {});

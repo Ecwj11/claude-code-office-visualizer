@@ -26,6 +26,14 @@ function problemsFor(OV, theme) {
     if (!fs.existsSync(path.join(ROOT, base + a))) problems.push('missing asset: ' + base + a);
   });
 
+  // Spawn-sound check. Like the assets above, a theme may play no sound at all
+  // (office does, silently); only a declared effects.spawnSound must resolve
+  // to a real file, relative to the repo root (it is not prefixed by `base`).
+  const spawnSound = theme.effects && theme.effects.spawnSound;
+  if (spawnSound && !fs.existsSync(path.join(ROOT, spawnSound))) {
+    problems.push('missing effects.spawnSound: ' + spawnSound);
+  }
+
   // Ambient-string key agreement. `_wander` looks up 'ambient_' + slot, so a typo'd
   // key silently falls back to the in-code default forever and no test would fail.
   Object.keys(theme.strings || {}).forEach((key) => {

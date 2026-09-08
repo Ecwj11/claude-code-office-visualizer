@@ -92,6 +92,25 @@ test('problemsFor: a referenced asset that is missing on disk is reported', () =
   );
 });
 
+test('problemsFor: effects.spawnSound pointing at a missing file is reported', () => {
+  const OV = ov();
+  const theme = validTheme();
+  theme.effects = { spawn: 'none', despawn: 'none', spawnSound: 'assets/themes/fixture/does-not-exist.mp3' };
+  const problems = problemsFor(OV, theme);
+  assert.ok(
+    problems.some((p) => p.includes('assets/themes/fixture/does-not-exist.mp3')),
+    'expected a problem mentioning the missing spawnSound path, got: ' + JSON.stringify(problems)
+  );
+});
+
+test('problemsFor: a valid effects.spawnSound path is reported clean', () => {
+  const OV = ov();
+  const theme = validTheme();
+  // Real, committed file — exercises the happy path against the repo's own asset.
+  theme.effects = { spawn: 'none', despawn: 'none', spawnSound: 'assets/themes/leaf/shadow_clone_jutsu.mp3' };
+  assert.deepEqual(problemsFor(OV, theme), []);
+});
+
 test('problemsFor: a slot with no edge connecting it is reported as stranded', () => {
   const OV = ov();
   const theme = validTheme();

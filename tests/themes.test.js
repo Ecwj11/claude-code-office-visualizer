@@ -109,7 +109,10 @@ test('leaf theme satisfies the slot contract', () => {
   const leaf = OV.Themes.get('leaf');
   assert.ok(leaf, 'leaf theme is registered');
   assert.deepEqual(OV.Themes.validate(leaf).errors, []);
-  assert.deepEqual(leaf.effects, { spawn: 'jutsu', despawn: 'poof' });
+  assert.deepEqual(leaf.effects, {
+    spawn: 'jutsu', despawn: 'poof',
+    spawnSound: 'assets/themes/leaf/shadow_clone_jutsu.mp3',
+  });
 });
 
 test('leaf theme uses the theme-invariant agent ids', () => {

@@ -20,6 +20,7 @@ function loadOV(files, options) {
     Promise: Promise,
     localStorage: options.localStorage,
     document: options.document,
+    Audio: options.Audio,
     window: {},
   };
   sandbox.window.OV = {};

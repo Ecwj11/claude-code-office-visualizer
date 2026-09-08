@@ -36,6 +36,7 @@
     "css/",
     "js/",
     "bridge/",
+    "assets/",
     "README.md",
     "LICENSE"
   ]

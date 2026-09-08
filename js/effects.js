@@ -98,6 +98,9 @@
     return W.delay(300)
       .then(function () {
         boss.say('Kage Bunshin no Jutsu!');
+        // 'full' is the only mode that reaches this line (the branch above
+        // returns early for 'fast'), so this can't stack ten clips.
+        if (ctx.spawnSound) playSound(ctx.spawnSound);
         return W.delay(100);
       })
       .then(function () {
@@ -113,6 +116,64 @@
         clone.walkTo(dest);
         return W.delay(300);
       });
+  }
+
+  // ---- Sound ----------------------------------------------------------
+  // One Audio element per URL, reused across triggers (bullet 4: no stacking).
+  // Muting is persisted the same way js/themes/index.js persists the active
+  // theme: a try/catch'd localStorage read/write, default unmuted, read once
+  // at load and kept in an in-memory flag afterwards.
+  const MUTE_KEY = 'ov.muted';
+  const audioCache = {};
+
+  function readMuted() {
+    try {
+      const store = (typeof localStorage !== 'undefined') ? localStorage : null;
+      return store ? store.getItem(MUTE_KEY) === '1' : false;
+    } catch (e) { return false; }
+  }
+
+  function writeMuted(value) {
+    try {
+      const store = (typeof localStorage !== 'undefined') ? localStorage : null;
+      if (store) store.setItem(MUTE_KEY, value ? '1' : '0');
+    } catch (e) { /* storage blocked; mute choice just won't persist */ }
+  }
+
+  let muted = readMuted();
+
+  function isMuted() { return muted; }
+
+  function setMuted(value) {
+    muted = !!value;
+    writeMuted(muted);
+    return muted;
+  }
+
+  // Plays `url` unless muted. Never throws and never rejects the caller — the
+  // jutsu animation chain and the agent spawn must complete regardless of
+  // autoplay policy (no user gesture yet) or a missing file.
+  function playSound(url) {
+    if (!url || muted) return;
+    if (typeof Audio === 'undefined') return;
+
+    try {
+      let audio = audioCache[url];
+      if (!audio) {
+        audio = new Audio(url);
+        audioCache[url] = audio;
+      }
+      // Retrigger restarts the clip instead of layering a second voice over it.
+      audio.currentTime = 0;
+      const p = audio.play();
+      if (p && typeof p.catch === 'function') {
+        // Rejects on every page load before the first user gesture (browser
+        // autoplay policy) — expected, not warning-worthy.
+        p.catch(function (err) { console.debug('effects: sound playback blocked', err); });
+      }
+    } catch (err) {
+      console.debug('effects: sound playback failed', err);
+    }
   }
 
   function none() { return Promise.resolve(); }
@@ -143,5 +204,8 @@
     play: play,
     despawn: despawn,
     smokeAt: smokeAt,
+    playSound: playSound,
+    isMuted: isMuted,
+    setMuted: setMuted,
   };
 })(window.OV = window.OV || {});

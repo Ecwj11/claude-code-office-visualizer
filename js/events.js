@@ -116,11 +116,13 @@
       const theme = OV.Themes.active;
       const spawnFx = theme && theme.effects ? theme.effects.spawn : 'none';
       if (spawnFx && spawnFx !== 'none') {
+        const spawnSound = theme && theme.effects ? theme.effects.spawnSound : null;
         OV.Effects.queue.enqueue(function (mode) {
           return OV.Effects.play(spawnFx, {
             agent: agent,
             orchestrator: OV.World.byId.claude,
             mode: mode,
+            spawnSound: spawnSound,
           });
         });
       }

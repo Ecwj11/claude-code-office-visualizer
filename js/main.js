@@ -100,6 +100,21 @@
     });
     refreshThemeBtn();
 
+    // Mute toggle. Off switch for the spawn-ritual sound effect (e.g. Hidden
+    // Leaf's jutsu clip); default is unmuted. Label reflects current state.
+    const muteBtn = document.getElementById('btn-mute');
+    function refreshMuteBtn() {
+      if (!muteBtn) return;
+      const muted = OV.Effects.isMuted();
+      muteBtn.textContent = muted ? '🔇' : '🔊';
+      muteBtn.title = muted ? 'Unmute sound effects' : 'Mute sound effects';
+    }
+    if (muteBtn) muteBtn.addEventListener('click', function () {
+      OV.Effects.setMuted(!OV.Effects.isMuted());
+      refreshMuteBtn();
+    });
+    refreshMuteBtn();
+
     // Expose for console tinkering / real-event bridge.
     window.OfficeVisualizer = OV;
   });
