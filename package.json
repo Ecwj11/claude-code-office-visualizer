@@ -28,13 +28,15 @@
   },
   "scripts": {
     "start": "node bridge/cli.js",
-    "serve": "node bridge/server.js"
+    "serve": "node bridge/server.js",
+    "test": "node --test tests/*.test.js"
   },
   "files": [
     "index.html",
     "css/",
     "js/",
     "bridge/",
+    "assets/",
     "README.md",
     "LICENSE"
   ]

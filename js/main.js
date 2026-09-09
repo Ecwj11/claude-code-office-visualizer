@@ -36,11 +36,11 @@
       const claude = OV.World.byId.claude;
       if (!claude) return;
       claude.setState(OV.STATES.THINKING, { task: 'Thinking…' });
-      OV.World.walk(claude, 'WHITEBOARD').then(function () {
+      OV.World.walk(claude, 'THINK_SPOT').then(function () {
         claude.say('Hmm, let me think…');
         return OV.World.delay(3000);
       }).then(function () {
-        return OV.World.walk(claude, 'CLAUDE_DESK', { state: OV.STATES.IDLE });
+        return OV.World.walk(claude, 'ORCHESTRATOR_HOME', { state: OV.STATES.IDLE });
       });
     });
 
@@ -75,6 +75,45 @@
     // Auto-connect only when the page is served by the bridge itself, so the
     // plain static server / file:// don't spam retries at a missing endpoint.
     if (location.port === '4319') { OV.Bridge.connect(); refreshLiveBtn(); }
+
+    // Theme toggle. Cycles the registered themes; the label names the theme the
+    // click will switch TO, so the user always sees where the button leads.
+    const themeBtn = document.getElementById('btn-theme');
+    function nextTheme() {
+      const all = OV.Themes.list();
+      const activeId = OV.Themes.active ? OV.Themes.active.id : null;
+      const i = all.findIndex(function (t) { return t.id === activeId; });
+      return all[(i + 1) % all.length];
+    }
+    function refreshThemeBtn() {
+      if (!themeBtn) return;
+      const next = nextTheme();
+      themeBtn.textContent = next ? next.name.toUpperCase() : 'THEME';
+      themeBtn.title = next ? 'Switch to ' + next.name : '';
+    }
+    if (themeBtn) themeBtn.addEventListener('click', function () {
+      const next = nextTheme();
+      if (!next) return;
+      OV.Simulation.stop();
+      OV.Themes.apply(next.id);
+      refreshThemeBtn();
+    });
+    refreshThemeBtn();
+
+    // Mute toggle. Off switch for the spawn-ritual sound effect (e.g. Hidden
+    // Leaf's jutsu clip); default is unmuted. Label reflects current state.
+    const muteBtn = document.getElementById('btn-mute');
+    function refreshMuteBtn() {
+      if (!muteBtn) return;
+      const muted = OV.Effects.isMuted();
+      muteBtn.textContent = muted ? '🔇' : '🔊';
+      muteBtn.title = muted ? 'Unmute sound effects' : 'Mute sound effects';
+    }
+    if (muteBtn) muteBtn.addEventListener('click', function () {
+      OV.Effects.setMuted(!OV.Effects.isMuted());
+      refreshMuteBtn();
+    });
+    refreshMuteBtn();
 
     // Expose for console tinkering / real-event bridge.
     window.OfficeVisualizer = OV;

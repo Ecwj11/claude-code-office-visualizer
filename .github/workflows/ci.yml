@@ -21,10 +21,16 @@ jobs:
 
       - name: Syntax-check all JS
         run: |
-          for f in js/*.js bridge/*.js; do
+          for f in $(find js bridge tools -name '*.js'); do
             echo "check $f"
             node --check "$f"
           done
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Validate themes
+        run: node tools/validate-themes.js
 
       - name: Validate JSON
         run: |

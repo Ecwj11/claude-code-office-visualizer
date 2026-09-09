@@ -9,7 +9,15 @@ A small virtual engineering office where Claude Code's agents **walk around and
 work**. Plain HTML/CSS/JS (no framework, no build step) plus an optional
 zero-dependency Node bridge for **live** Claude Code hook events.
 
-![Agent Office — Claude at the whiteboard, Builder and Debugger collaborating, Test running, states in the side panel](./docs/office.jpg)
+Two themes, switchable at runtime from the toolbar.
+
+**Agent Office** — Claude orchestrating, agents walking between desks, working, and collaborating:
+
+![Agent Office theme — agents walking between desks, working at monitors, a subagent spawning](./docs/office.gif)
+
+**Hidden Leaf** — the same office as a ninja mission room, where every subagent arrives as a shadow clone:
+
+![Hidden Leaf theme — Naruto calling Kage Bunshin no Jutsu while shadow clones walk the mission room](./docs/leaf.gif)
 
 ## Get it running (for anyone)
 
@@ -72,6 +80,36 @@ that walk in, work, report back to Claude, and leave.
 The hook command is a plain `curl` with a 2s timeout and `|| true`, so it
 **never blocks Claude Code** — if the bridge isn't running, the hook is a no-op.
 
+## Themes
+
+The office ships with two themes, switched from the THEME button in the toolbar.
+The choice persists in `localStorage` and switching does not drop a live bridge
+connection, so you can change the look mid-run.
+
+| Theme | Look | Spawn effect |
+| --- | --- | --- |
+| Agent Office | The original engineering floor | Subagents walk in |
+| Hidden Leaf | A ninja village training ground | Shadow clone jutsu |
+
+Adding a third theme means adding one file under `js/themes/`, registering it,
+and adding a script tag. Core code addresses places by semantic slot
+(`ORCHESTRATOR_HOME`, `WORKER_1`, `OVERFLOW_3`, …), so a new theme needs no
+changes anywhere else. `node tools/validate-themes.js` checks a theme against
+the slot contract before you ship it.
+
+### A note on the Hidden Leaf theme
+
+Its artwork is AI-generated fan art. Naruto and its characters are the
+intellectual property of Shueisha and Pierrot; this theme is unofficial and
+unaffiliated. `js/themes/leaf.js` has a `CANON_NAMES` switch at the top — set it
+to `false` to use generic ninja names instead.
+
+**Release checklist:** decide `CANON_NAMES` before running `npm publish`.
+
+The theme currently renders with emoji characters and a CSS palette, since
+village artwork was deferred; sprites can be added later by dropping images
+into `assets/themes/leaf/` and adding `sprite:` fields to the theme's cast.
+
 ## Event mapping
 
 | Claude Code hook | Office behaviour |
@@ -122,8 +160,8 @@ start.command / start.sh / start.bat  double-click launchers (macOS / *nix / Win
 ## CI & releasing (maintainers)
 
 - **CI** (`.github/workflows/ci.yml`): on every push/PR, syntax-checks all JS,
-  validates the JSON, and smoke-tests the bridge (serve + `/health` + hook POST)
-  across Node 18/20/22.
+  runs the unit tests, validates themes, validates the JSON, and smoke-tests the
+  bridge (serve + `/health` + hook POST) across Node 18/20/22.
 - **Publish** (`.github/workflows/publish.yml`): cutting a GitHub **Release**
   runs `npm publish`. One-time setup: add a repo secret **`NPM_TOKEN`**
   (npmjs.com → Access Tokens → *Automation*). Then bump `version` in

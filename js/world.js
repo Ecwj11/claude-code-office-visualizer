@@ -34,12 +34,8 @@
       this.logEl = document.getElementById('event-log');
       this.countEl = document.getElementById('active-count');
 
-      // Remember the starting roster so RESET can restore exactly it.
-      this._originalIds = new Set(OV.AGENT_DEFS.map((d) => d.id));
-      OV.AGENT_DEFS.forEach((def) => this.addAgent(def));
-      this.log('system', 'Office initialised · ' + this.agents.length + ' agents ready');
-      this.startLoop();
-      this.startAmbient();
+      const wanted = OV.Themes.remembered() || 'office';
+      if (!OV.Themes.apply(wanted)) OV.Themes.apply('office');
     },
 
     addAgent: function (def) {
@@ -63,6 +59,108 @@
       delete this.byId[id];
       this._wandering.delete(id);
       this._updateCount();
+    },
+
+    // ---- floor rendering (theme-driven) ----------------------------------
+    // Furniture is data, not markup. Each entry becomes one absolutely
+    // positioned element; `kind` selects the visual treatment defined in CSS.
+    renderFloor: function (theme) {
+      const floor = this.floorEl;
+      if (!floor) return;
+
+      // .jutsu-smoke is included so a theme switch mid-animation can't strand
+      // an effect element that was appended straight to the floor.
+      const old = floor.querySelectorAll('.furn, .rug, .jutsu-smoke');
+      for (let i = 0; i < old.length; i++) old[i].remove();
+
+      (theme.furniture || []).forEach((f) => {
+        const el = document.createElement('div');
+        el.dataset.furn = f.id;
+        el.style.left = f.x + '%';
+        el.style.top = f.y + '%';
+
+        if (f.kind === 'rug') {
+          el.className = 'rug';
+          floor.prepend(el);
+          return;
+        }
+
+        el.className = 'furn ' + f.kind + (f.className ? ' ' + f.className : '');
+
+        if (f.kind === 'desk') {
+          const m = document.createElement('div');
+          m.className = 'monitor';
+          m.textContent = f.emoji || '💻';
+          el.appendChild(m);
+        } else if (f.kind === 'window') {
+          const v = document.createElement('div');
+          v.className = 'window-view';
+          el.appendChild(v);
+        } else if (f.kind === 'whiteboard') {
+          const s = document.createElement('div');
+          s.className = 'board-scribble';
+          el.appendChild(s);
+        } else if (f.emoji) {
+          const e = document.createElement('span');
+          e.className = f.kind === 'plant' ? 'furn-plant-emoji' : 'furn-emoji';
+          e.textContent = f.emoji;
+          el.appendChild(e);
+        }
+
+        if (f.label) {
+          const lab = document.createElement('span');
+          lab.className = 'furn-label';
+          lab.textContent = f.label; // textContent avoids HTML injection
+          el.appendChild(lab);
+        }
+
+        floor.prepend(el);
+      });
+    },
+
+    // Swap the whole floor in place. Deliberately does NOT touch OV.Bridge, so
+    // a live SSE run keeps streaming across a theme change.
+    applyTheme: function (theme) {
+      const wasRunning = this.running;
+      this.stopLoop();
+      this.clearAllTimers();
+      this.generation++;
+
+      this.agents.slice().forEach((a) => this.removeAgent(a.id));
+
+      const body = document.body;
+      body.dataset.theme = theme.id;
+
+      // Clear the previous theme's custom properties before applying this
+      // theme's, otherwise switching to a theme with a smaller palette leaves
+      // the old colors stuck on <body>.
+      (this._paletteKeys || []).forEach((k) => body.style.removeProperty(k));
+      this._paletteKeys = Object.keys(theme.palette || {});
+      this._paletteKeys.forEach((k) => {
+        body.style.setProperty(k, theme.palette[k]);
+      });
+      if (theme.assets && theme.assets.floor) {
+        // Resolve to an ABSOLUTE url before handing it to the custom property.
+        // A relative url() inside a custom property is resolved by the browser
+        // against the stylesheet that *uses* the var() — css/styles.css — not
+        // against the document, so 'assets/themes/leaf/x.webp' would be fetched
+        // as 'css/assets/themes/leaf/x.webp' and 404. Resolving against
+        // document.baseURI here is also what keeps this working over file://,
+        // where a root-relative '/assets/...' path would break instead.
+        const floorUrl = new URL((theme.assets.base || '') + theme.assets.floor, document.baseURI).href;
+        body.style.setProperty('--floor-image', 'url("' + floorUrl + '")');
+      } else {
+        body.style.removeProperty('--floor-image');
+      }
+
+      this.renderFloor(theme);
+
+      this._originalIds = new Set(OV.AGENT_DEFS.map((d) => d.id));
+      OV.AGENT_DEFS.forEach((def) => this.addAgent(def));
+
+      this.log('system', 'Theme · ' + theme.name);
+      this.startLoop();
+      this.startAmbient();
     },
 
     // ---- movement loop ---------------------------------------------------
@@ -190,7 +288,7 @@
       this._wandering.add(agent.id);
 
       // Pick somewhere interesting that isn't the agent's own desk.
-      const spots = ['WHITEBOARD', 'COFFEE_AREA', 'CENTER_AREA', 'WINDOW'];
+      const spots = ['THINK_SPOT', 'BREAK_SPOT', 'GATHER_SPOT', 'AMBIENT_SPOT'];
       // occasionally visit a peer's desk instead
       const peers = this.agents.filter((a) => a !== agent);
       let dest;
@@ -200,15 +298,16 @@
         intent = STATES.WAITING;
       } else {
         dest = spots[Math.floor(this._rand() * spots.length)];
-        intent = dest === 'WHITEBOARD' ? STATES.THINKING : STATES.WAITING;
+        intent = dest === 'THINK_SPOT' ? STATES.THINKING : STATES.WAITING;
       }
 
-      const chatter = {
-        WHITEBOARD: 'Reviewing the plan…',
-        COFFEE_AREA: '☕ break',
-        CENTER_AREA: 'Stretching',
-        WINDOW: 'Nice view',
+      const fallback = {
+        THINK_SPOT: 'Reviewing the plan…',
+        BREAK_SPOT: '☕ break',
+        GATHER_SPOT: 'Stretching',
+        AMBIENT_SPOT: 'Nice view',
       };
+      const line = OV.Themes.strings('ambient_' + dest, fallback[dest]);
 
       const done = () => { this._wandering.delete(agent.id); };
       // A wander already in flight when the simulation starts must yield: bail
@@ -218,7 +317,7 @@
       this.walk(agent, dest).then(() => {
         if (yielded()) return;
         agent.setState(intent);
-        if (chatter[dest]) agent.say(chatter[dest]);
+        if (line) agent.say(line);
         return this.delay(2500 + Math.floor(this._rand() * 3000));
       }).then(() => {
         if (yielded()) return;
@@ -312,6 +411,12 @@
         .filter((a) => !this._originalIds.has(a.id))
         .forEach((a) => this.removeAgent(a.id));
       this.agents.forEach((a) => a.resetToHome());
+      // clearAllTimers() above cancels a smoke element's removal timeout
+      // without detaching the element itself; sweep any left mid-animation
+      // so a RESET during the ~550ms smoke window can't strand a node.
+      if (this.floorEl) {
+        this.floorEl.querySelectorAll('.jutsu-smoke').forEach((el) => el.remove());
+      }
       if (this.logEl) this.logEl.innerHTML = '';
       this.log('system', 'Reset · agents returned to desks');
       // restart ambient life on the fresh generation

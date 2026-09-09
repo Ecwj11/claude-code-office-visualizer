@@ -13,11 +13,20 @@
 
   let seq = 0;
 
+  // The four row classes a sheet-animated agent can wear on its .agent-sprite
+  // element (see js/sprite.js and css/styles.css). Listed once so both the
+  // apply and the load-failure cleanup path stay in sync.
+  const SPRITE_ROW_CLASSES = ['sprite-row-runRight', 'sprite-row-runLeft', 'sprite-row-idle', 'sprite-row-work'];
+  // Frame counts the stylesheet has keyframes for; anything else animates not at all.
+  const SPRITE_STEP_CLASSES = ['sprite-steps-4', 'sprite-steps-6', 'sprite-steps-8'];
+
   function Agent(def, floorEl) {
     this.id = def.id || 'agent-' + (++seq);
     this.name = def.name || this.id;
     this.role = def.role || 'Agent';
     this.emoji = def.emoji || '🙂';
+    this.sprite = def.sprite || null; // single static image path; null means render the emoji
+    this.sprites = def.sprites || null; // theme-declared sheet config; null means no frame animation
     this.color = def.color || '#8ab4f8';
     this.home = def.home; // navigation-point name of this agent's desk
     this.orchestrator = !!def.orchestrator;
@@ -28,9 +37,15 @@
     this.currentTool = null;
     this.animationState = 'idle'; // idle | walking | working
     this.facing = 'down'; // down | up | left | right
+    // The last time `facing` became 'left' or 'right' (never both null and
+    // 'up'/'down' — see _setFacing). The sheet has no vertical run cycle, so
+    // WALKING while facing up/down reuses this instead (js/sprite.js).
+    this.lastHorizontalFacing = null;
+    this._sheetReady = false; // true once this.sprites.sheet has loaded successfully
+    this._spriteRow = null; // last sprite-row-* class applied, to skip redundant DOM writes
 
     // Movement (all coordinates are % of the office floor)
-    const start = OV.LOCATIONS[this.home] || OV.LOCATIONS.CENTER_AREA;
+    const start = OV.LOCATIONS[this.home] || OV.LOCATIONS.GATHER_SPOT;
     this.position = { x: start.x, y: start.y };
     this.targetPosition = { x: start.x, y: start.y };
     this.path = null;
@@ -56,7 +71,7 @@
     el.innerHTML =
       '<div class="agent-bubble" hidden></div>' +
       '<div class="agent-body">' +
-        '<div class="agent-sprite">' + this.emoji + '</div>' +
+        '<div class="agent-sprite"></div>' +
         '<div class="agent-typing"><span></span><span></span><span></span></div>' +
       '</div>' +
       '<div class="agent-shadow"></div>' +
@@ -67,6 +82,7 @@
     this.bubbleEl = el.querySelector('.agent-bubble');
     this.bodyEl = el.querySelector('.agent-body');
     this.spriteEl = el.querySelector('.agent-sprite');
+    this._paintSprite();
     const nameEl = el.querySelector('.agent-tag-name');
     nameEl.textContent = this.name; // textContent avoids HTML injection
     nameEl.title = this.name;       // hover shows the full name if truncated
@@ -88,7 +104,7 @@
       this.animationState = 'working';
       this._stopWalking();
       const loc = OV.LOCATIONS[this.home];
-      if (loc) this.facing = loc.face || 'down';
+      if (loc) this._setFacing(loc.face || 'down');
     } else if (state === STATES.WALKING) {
       this.animationState = 'walking';
     } else if (state !== STATES.COLLABORATING) {
@@ -166,7 +182,7 @@
     const loc = OV.LOCATIONS[this.destName];
     this.path = null;
     this.pathIndex = 0;
-    if (loc && loc.face) this.facing = loc.face;
+    if (loc && loc.face) this._setFacing(loc.face);
     this.animationState = 'idle';
     this.render();
     this._settle(); // arrived normally (no cancel flag)
@@ -174,10 +190,18 @@
 
   Agent.prototype._face = function (dx, dy) {
     if (Math.abs(dx) > Math.abs(dy)) {
-      this.facing = dx < 0 ? 'left' : 'right';
+      this._setFacing(dx < 0 ? 'left' : 'right');
     } else {
-      this.facing = dy < 0 ? 'up' : 'down';
+      this._setFacing(dy < 0 ? 'up' : 'down');
     }
+  };
+
+  // Every facing change funnels through here so `lastHorizontalFacing` can
+  // never drift out of sync with `facing` — js/sprite.js's up/down fallback
+  // depends on it staying accurate.
+  Agent.prototype._setFacing = function (dir) {
+    this.facing = dir;
+    if (dir === 'left' || dir === 'right') this.lastHorizontalFacing = dir;
   };
 
   // ---- Speech / task bubbles --------------------------------------------
@@ -212,10 +236,24 @@
     // z-order by vertical position so lower agents overlap higher ones.
     el.style.zIndex = String(100 + Math.round(this.position.y));
 
-    // state class
-    el.className = 'agent state-' + this.status.toLowerCase() +
-      ' anim-' + this.animationState +
-      ' face-' + this.facing;
+    // state class — preserve classes owned by other systems (effects add
+    // is-clone, is-poofing, jutsu-seal...). render() runs every frame, so it
+    // must not clobber them.
+    const managed = /^(state|anim|face)-/;
+    const kept = [];
+    for (let i = 0; i < el.classList.length; i++) {
+      const c = el.classList[i];
+      if (c !== 'agent' && !managed.test(c)) kept.push(c);
+    }
+    el.className = ['agent',
+      'state-' + this.status.toLowerCase(),
+      'anim-' + this.animationState,
+      'face-' + this.facing].concat(kept).join(' ');
+
+    // Frame animation is driven entirely by CSS steps() keyframes (see
+    // css/styles.css); this only decides *which* row's keyframes apply, via
+    // OV.Sprite.rowForState — a pure function, unit-tested on its own.
+    if (this.sprites && this._sheetReady) this._updateSpriteRow();
   };
 
   // Reset to a clean state at the home desk.
@@ -223,16 +261,112 @@
     this.hideBubble();
     this._settle({ cancelled: true }); // release any pending walk promise
     this._stopWalking();
-    const loc = OV.LOCATIONS[this.home] || OV.LOCATIONS.CENTER_AREA;
+    const loc = OV.LOCATIONS[this.home] || OV.LOCATIONS.GATHER_SPOT;
     this.position.x = loc.x;
     this.position.y = loc.y;
-    this.facing = loc.face || 'down';
+    this.lastHorizontalFacing = null;
+    this._setFacing(loc.face || 'down');
     this.currentTask = null;
     this.currentTool = null;
     this.animationState = 'idle';
     this.status = STATES.IDLE;
     this.render();
     if (typeof this.onChange === 'function') this.onChange(this, {});
+  };
+
+  // Swap in the sheet row for the agent's current state/facing, if it changed.
+  // Cheap (a few comparisons + at most one classList write) and safe to call
+  // every render() tick alongside ten other agents.
+  Agent.prototype._updateSpriteRow = function () {
+    const row = OV.Sprite.rowForState(this.status, this.facing, this.lastHorizontalFacing);
+    if (row === this._spriteRow) return;
+    this._spriteRow = row;
+    const classList = this.spriteEl.classList;
+    for (let i = 0; i < SPRITE_ROW_CLASSES.length; i++) classList.remove(SPRITE_ROW_CLASSES[i]);
+    classList.add('sprite-row-' + row);
+
+    // How many frames THIS row has is per-character data (Shikamaru runs 6
+    // where the rest run 8), and CSS `steps()` cannot read a custom property —
+    // so the count has to arrive as a class. The row class carries the row's
+    // Y offset and duration; this one carries the frame count and distance.
+    const counts = (this.sprites && this.sprites.counts) || {};
+    const n = counts[row];
+    for (let i = 0; i < SPRITE_STEP_CLASSES.length; i++) classList.remove(SPRITE_STEP_CLASSES[i]);
+    if (SPRITE_STEP_CLASSES.indexOf('sprite-steps-' + n) !== -1) classList.add('sprite-steps-' + n);
+  };
+
+  // Sprite art, in order of preference: the theme's frame-animation sheet,
+  // then a single static image, then the emoji. A failed image load always
+  // falls back to the emoji rather than showing a broken box (Task 7).
+  Agent.prototype._paintSprite = function () {
+    if (this.sprites && this.sprites.sheet) { this._paintSheetSprite(); return; }
+
+    const el = this.spriteEl;
+    if (!this.sprite) {
+      el.classList.remove('has-image');
+      el.textContent = this.emoji;
+      return;
+    }
+    const probe = new Image();
+    const self = this;
+    probe.onload = function () {
+      el.textContent = '';
+      el.classList.add('has-image');
+      el.style.backgroundImage = 'url("' + self.sprite + '")';
+    };
+    probe.onerror = function () {
+      console.warn('agent: sprite failed to load, falling back to emoji', self.sprite);
+      el.classList.remove('has-image');
+      el.style.backgroundImage = '';
+      el.textContent = self.emoji;
+    };
+    el.textContent = this.emoji; // shown until the image resolves
+    probe.src = this.sprite;
+  };
+
+  // Frame-animation sheet path: probes the sheet the same way the single-image
+  // path above probes its image. On success, marks both the sprite element
+  // (for the CSS that sizes/positions the sheet) and the agent root (for the
+  // CSS that must NOT run — the emoji bob/wobble and left/right flip would
+  // double up with, or fight, the sheet's own animation; see css/styles.css).
+  // On failure, falls back to the emoji exactly like the single-image path.
+  Agent.prototype._paintSheetSprite = function () {
+    const el = this.spriteEl;
+    const sheet = this.sprites.sheet;
+    const probe = new Image();
+    const self = this;
+    probe.onload = function () {
+      el.textContent = '';
+      el.classList.add('has-sheet');
+      self.el.classList.add('has-sheet-sprite');
+      el.style.backgroundImage = 'url("' + sheet + '")';
+      // Geometry comes from the theme, never from the stylesheet: the CSS
+      // derives width, background-size and every keyframe offset from these,
+      // so a sheet with different cells or a different column count needs no
+      // CSS change and the two can never drift apart.
+      const cell = self.sprites.cell || {};
+      const rows = Object.keys(self.sprites.rows || {}).length || 4;
+      el.style.setProperty('--sprite-cell-w', String(cell.w || 78));
+      el.style.setProperty('--sprite-cell-h', String(cell.h || 87));
+      el.style.setProperty('--sprite-cols', String(self.sprites.cols || 6));
+      el.style.setProperty('--sprite-rows', String(rows));
+      self._sheetReady = true;
+      self._spriteRow = null; // force _updateSpriteRow to apply a row class now
+      self.render();
+    };
+    probe.onerror = function () {
+      console.warn('agent: sprite sheet failed to load, falling back to emoji', sheet);
+      self._sheetReady = false;
+      self._spriteRow = null;
+      el.classList.remove('has-sheet');
+      for (let i = 0; i < SPRITE_ROW_CLASSES.length; i++) el.classList.remove(SPRITE_ROW_CLASSES[i]);
+      for (let i = 0; i < SPRITE_STEP_CLASSES.length; i++) el.classList.remove(SPRITE_STEP_CLASSES[i]);
+      self.el.classList.remove('has-sheet-sprite');
+      el.style.backgroundImage = '';
+      el.textContent = self.emoji;
+    };
+    el.textContent = this.emoji; // shown until the sheet resolves
+    probe.src = sheet;
   };
 
   OV.Agent = Agent;
