@@ -346,9 +346,9 @@
       // CSS change and the two can never drift apart.
       const cell = self.sprites.cell || {};
       const rows = Object.keys(self.sprites.rows || {}).length || 4;
-      el.style.setProperty('--sprite-cell-w', String(cell.w || 78));
+      el.style.setProperty('--sprite-cell-w', String(cell.w || 88));
       el.style.setProperty('--sprite-cell-h', String(cell.h || 87));
-      el.style.setProperty('--sprite-cols', String(self.sprites.cols || 6));
+      el.style.setProperty('--sprite-cols', String(self.sprites.cols || 8));
       el.style.setProperty('--sprite-rows', String(rows));
       self._sheetReady = true;
       self._spriteRow = null; // force _updateSpriteRow to apply a row class now

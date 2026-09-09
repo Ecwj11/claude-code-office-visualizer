@@ -92,6 +92,28 @@ test('leaf theme gives every cast member its OWN sheet, not the shared fallback'
   assert.equal(new Set(sheets).size, sheets.length, 'every cast member needs a distinct sheet: ' + sheets.join(', '));
 });
 
+test('leaf: every sheet declares the shipped geometry (88x87 cells, 8 columns)', () => {
+  const OV = loadOV(['js/config.js', 'js/nav.js', 'js/themes/index.js', 'js/themes/leaf.js']);
+  OV.Themes.apply('leaf');
+  const leaf = OV.Themes.get('leaf');
+
+  // The real .webp files are 704x348 = 8 columns of 88 by 4 rows of 87. Nothing
+  // else asserted these numbers, so reverting sheetFor() to the pre-migration
+  // 78x87/6-column geometry used to pass every test while mis-slicing every
+  // frame in the browser. css/styles.css derives width, background-size and the
+  // keyframe offsets from exactly these values.
+  const expectGeometry = (sp, who) => {
+    assert.equal(sp.cell.w, 88, who + ' cell width');
+    assert.equal(sp.cell.h, 87, who + ' cell height');
+    assert.equal(sp.cols, 8, who + ' column count');
+    assert.deepEqual(sp.rows, { runRight: 0, runLeft: 1, idle: 2, work: 3 }, who + ' row map');
+  };
+
+  OV.AGENT_DEFS.forEach((def) => expectGeometry(def.sprites, def.id));
+  // The fallback matters just as much: it is what every runtime shadow clone uses.
+  expectGeometry(leaf.sprites, 'theme-level fallback');
+});
+
 test('leaf: Shikamaru keeps his 6-frame run cycles while the rest have 8', () => {
   const OV = loadOV(['js/config.js', 'js/nav.js', 'js/themes/index.js', 'js/themes/leaf.js']);
   OV.Themes.apply('leaf');

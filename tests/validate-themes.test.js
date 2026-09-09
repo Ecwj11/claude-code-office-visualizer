@@ -171,6 +171,20 @@ test('problemsFor: a sprites.counts value below 1 is reported', () => {
   );
 });
 
+test('problemsFor: a frame count with no matching CSS keyframes is reported', () => {
+  const OV = ov();
+  const theme = validTheme();
+  // 5 is not one of the counts css/styles.css has keyframes for. js/agent.js
+  // adds no sprite-steps class for it, so the row silently freezes on frame 0
+  // in the browser — graceful, but wrong, and nothing else would catch it.
+  theme.sprites = validSprites({ counts: { runRight: 5, runLeft: 5, idle: 4, work: 4 } });
+  const problems = problemsFor(OV, theme);
+  assert.ok(
+    problems.some((p) => p.includes('runRight') && p.includes('5')),
+    'expected a problem naming the unsupported frame count, got: ' + JSON.stringify(problems)
+  );
+});
+
 test('problemsFor: a per-cast sprites sheet missing on disk is reported, naming that cast id', () => {
   const OV = ov();
   const theme = validTheme();

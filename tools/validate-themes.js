@@ -12,6 +12,10 @@ const { loadOV, ROOT } = require('./browser-module');
 // Accumulates the list of problems for one theme. Pure with respect to the
 // filesystem check (which only reads, never writes) so it's directly testable
 // with in-memory theme fixtures — see tests/validate-themes.test.js.
+// Frame counts css/styles.css ships keyframes and step classes for. Kept next
+// to the check that enforces it so the two cannot drift apart.
+const SUPPORTED_FRAME_COUNTS = [4, 6, 8];
+
 function problemsFor(OV, theme) {
   const problems = OV.Themes.validate(theme).errors.slice();
 
@@ -57,8 +61,13 @@ function problemsFor(OV, theme) {
         problems.push(label + '.rows["' + key + '"] is out of range 0..' + maxIndex + ': ' + r);
       }
       const c = counts[key];
-      if (typeof c !== 'number' || c < 1) {
-        problems.push(label + '.counts["' + key + '"] must be >= 1: ' + c);
+      // Only these counts have matching `sprite-frames-N` keyframes and
+      // `sprite-steps-N` classes in css/styles.css. Any other value passes
+      // silently in JS (agent.js adds no step class) and freezes that row on
+      // frame 0 in the browser, which no test would catch — so it fails here.
+      if (typeof c !== 'number' || SUPPORTED_FRAME_COUNTS.indexOf(c) === -1) {
+        problems.push(label + '.counts["' + key + '"] must be one of ' +
+          SUPPORTED_FRAME_COUNTS.join('/') + ' (the counts css/styles.css has keyframes for): ' + c);
       }
     });
   }

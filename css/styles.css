@@ -748,7 +748,12 @@ html, body {
   transform: translate(-50%, -60%);
   pointer-events: none;
   z-index: 400;
-  background-image: url("assets/themes/leaf/smoke-sheet.webp");
+/* Path is relative to THIS STYLESHEET (css/), not the document, so it needs
+     the ../ — without it this resolves to css/assets/... and 404s, and the
+     puff renders as an invisible box on every spawn. The floor image avoids
+     the same trap differently: it is a custom property set from JS, so
+     js/world.js resolves it against document.baseURI instead. */
+  background-image: url("../assets/themes/leaf/smoke-sheet.webp");
   background-repeat: no-repeat;
   background-size: calc(var(--smoke-w) * 6) var(--smoke-h);
   animation: jutsu-puff 500ms steps(6) forwards;
