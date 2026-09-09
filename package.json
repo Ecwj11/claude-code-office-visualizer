@@ -1,6 +1,6 @@
 {
   "name": "claude-agent-office",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "A living virtual office that visualizes Claude Code agents walking around and working - driven by a scripted simulation or by real Claude Code hook events. Switchable themes with animated sprite casts.",
   "homepage": "https://github.com/Ecwj11/claude-code-office-visualizer#readme",
   "repository": {
