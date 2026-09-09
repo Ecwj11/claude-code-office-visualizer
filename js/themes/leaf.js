@@ -36,21 +36,21 @@
     slots: {
       ORCHESTRATOR_HOME: { x: 50, y: 22, face: 'up', label: nm('Hokage desk', 'Leader desk') },
       THINK_SPOT: { x: 12, y: 30, face: 'left', label: 'Mission board' },
-      BREAK_SPOT: { x: 87, y: 18, face: 'up', label: nm('Ichiraku', 'Ramen stand') },
-      AMBIENT_SPOT: { x: 50, y: 8, face: 'up', label: 'Village gate' },
-      GATHER_SPOT: { x: 50, y: 60, face: 'down', label: 'Training ground' },
+      BREAK_SPOT: { x: 87, y: 18, face: 'up', label: 'Tea corner' },
+      AMBIENT_SPOT: { x: 50, y: 8, face: 'up', label: 'Window' },
+      GATHER_SPOT: { x: 50, y: 60, face: 'down', label: 'Briefing floor' },
 
-      WORKER_1: { x: 18, y: 48, face: 'left', label: 'Training post' },
-      WORKER_2: { x: 82, y: 48, face: 'right', label: 'Training post' },
-      WORKER_3: { x: 18, y: 74, face: 'left', label: 'Training post' },
-      WORKER_4: { x: 82, y: 74, face: 'right', label: 'Training post' },
+      WORKER_1: { x: 18, y: 48, face: 'left', label: 'Desk' },
+      WORKER_2: { x: 82, y: 48, face: 'right', label: 'Desk' },
+      WORKER_3: { x: 18, y: 74, face: 'left', label: 'Desk' },
+      WORKER_4: { x: 82, y: 74, face: 'right', label: 'Desk' },
 
-      OVERFLOW_1: { x: 33, y: 58, face: 'down', label: 'Perch' },
-      OVERFLOW_2: { x: 50, y: 55, face: 'down', label: 'Perch' },
-      OVERFLOW_3: { x: 67, y: 58, face: 'down', label: 'Perch' },
-      OVERFLOW_4: { x: 33, y: 72, face: 'down', label: 'Perch' },
-      OVERFLOW_5: { x: 50, y: 73, face: 'down', label: 'Perch' },
-      OVERFLOW_6: { x: 67, y: 72, face: 'down', label: 'Perch' },
+      OVERFLOW_1: { x: 33, y: 58, face: 'down', label: 'Floor' },
+      OVERFLOW_2: { x: 50, y: 55, face: 'down', label: 'Floor' },
+      OVERFLOW_3: { x: 67, y: 58, face: 'down', label: 'Floor' },
+      OVERFLOW_4: { x: 33, y: 72, face: 'down', label: 'Floor' },
+      OVERFLOW_5: { x: 50, y: 73, face: 'down', label: 'Floor' },
+      OVERFLOW_6: { x: 67, y: 72, face: 'down', label: 'Floor' },
     },
 
     waypoints: {
@@ -98,14 +98,14 @@
     // Scenery is painted into village-floor.webp; these are label hotspots
     // positioned to sit under the corresponding painted landmark.
     furniture: [
-      { id: 'gate', kind: 'hotspot', x: 50, y: 8, label: 'Village gate' },
+      { id: 'window', kind: 'hotspot', x: 50, y: 8, label: 'Window' },
       { id: 'tower', kind: 'hotspot', x: 50, y: 22, label: nm('Hokage tower', 'Leader tower') },
-      { id: 'ramen', kind: 'hotspot', x: 87, y: 18, label: nm('Ichiraku', 'Ramen') },
-      { id: 'board', kind: 'hotspot', x: 12, y: 30, label: 'Missions' },
-      { id: 'post-1', kind: 'hotspot', x: 18, y: 48, label: 'Post' },
-      { id: 'post-2', kind: 'hotspot', x: 82, y: 48, label: 'Post' },
-      { id: 'post-3', kind: 'hotspot', x: 18, y: 74, label: 'Post' },
-      { id: 'post-4', kind: 'hotspot', x: 82, y: 74, label: 'Post' },
+      { id: 'tea', kind: 'hotspot', x: 87, y: 18, label: 'Tea corner' },
+      { id: 'board', kind: 'hotspot', x: 12, y: 30, label: 'Mission board' },
+      { id: 'post-1', kind: 'hotspot', x: 18, y: 48, label: 'Desk' },
+      { id: 'post-2', kind: 'hotspot', x: 82, y: 48, label: 'Desk' },
+      { id: 'post-3', kind: 'hotspot', x: 18, y: 74, label: 'Desk' },
+      { id: 'post-4', kind: 'hotspot', x: 82, y: 74, label: 'Desk' },
     ],
 
     cast: [
@@ -147,9 +147,9 @@
 
     strings: {
       ambient_THINK_SPOT: 'Reading the mission scroll…',
-      ambient_BREAK_SPOT: '🍜 ramen break',
-      ambient_GATHER_SPOT: 'Training',
-      ambient_AMBIENT_SPOT: 'Watching the gate',
+      ambient_BREAK_SPOT: '🍵 tea break',
+      ambient_GATHER_SPOT: 'Stretching',
+      ambient_AMBIENT_SPOT: 'Watching the village',
     },
 
     // The painted mission-room scene. js/world.js sets `--floor-image` from
