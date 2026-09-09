@@ -72,13 +72,44 @@ test('office theme yields no sprites config on any built agent def (the emoji pa
   });
 });
 
-test('leaf theme applies its shared sprites sheet config to every cast member', () => {
+test('leaf theme gives every cast member its OWN sheet, not the shared fallback', () => {
   const OV = loadOV(['js/config.js', 'js/nav.js', 'js/themes/index.js', 'js/themes/leaf.js']);
   OV.Themes.apply('leaf');
   const leaf = OV.Themes.get('leaf');
-  assert.ok(leaf.sprites && leaf.sprites.sheet, 'sanity: leaf declares a sprites block');
+  assert.ok(leaf.sprites && leaf.sprites.sheet, 'sanity: leaf still declares a fallback block');
   assert.ok(OV.AGENT_DEFS.length > 0);
+
   OV.AGENT_DEFS.forEach((def) => {
-    assert.deepEqual(def.sprites, leaf.sprites);
+    const entry = leaf.cast.find((c) => c.id === def.id);
+    assert.ok(entry.sprites, def.id + ' should declare its own sprites block');
+    assert.deepEqual(def.sprites, entry.sprites, def.id + ' should resolve to its own sheet');
+  });
+
+  // Distinctness matters as much as presence: if two entries were copy-pasted
+  // with the same file, or an entry were dropped so it silently inherited the
+  // fallback, the assertions above would still pass.
+  const sheets = OV.AGENT_DEFS.map((d) => d.sprites.sheet);
+  assert.equal(new Set(sheets).size, sheets.length, 'every cast member needs a distinct sheet: ' + sheets.join(', '));
+});
+
+test('leaf: Shikamaru keeps his 6-frame run cycles while the rest have 8', () => {
+  const OV = loadOV(['js/config.js', 'js/nav.js', 'js/themes/index.js', 'js/themes/leaf.js']);
+  OV.Themes.apply('leaf');
+  const byId = {};
+  OV.AGENT_DEFS.forEach((d) => { byId[d.id] = d; });
+
+  // Guards the short-row case: his sheet has 8 columns but only 6 run frames,
+  // so the trailing two cells are empty and must never be stepped into.
+  assert.equal(byId.validator.sprites.counts.runRight, 6);
+  assert.equal(byId.validator.sprites.counts.runLeft, 6);
+  assert.equal(byId.validator.sprites.cols, 8);
+  ['claude', 'builder', 'test', 'debugger'].forEach((id) => {
+    assert.equal(byId[id].sprites.counts.runRight, 8, id + ' runs 8 frames');
+    assert.equal(byId[id].sprites.counts.runLeft, 8, id + ' runs 8 frames');
+  });
+  // idle/work are 4 across the whole cast.
+  OV.AGENT_DEFS.forEach((d) => {
+    assert.equal(d.sprites.counts.idle, 4);
+    assert.equal(d.sprites.counts.work, 4);
   });
 });

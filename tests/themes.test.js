@@ -160,9 +160,10 @@ test('castFor: leaf maps a known subagent type to that character\'s look', () =>
   assert.equal(cast.emoji, '⚡');
   assert.equal(cast.color, '#6ea8fe');
   assert.equal(cast.isClone, false);
-  // Task 18: 'builder' declares no sprites override of its own, so a mapped
-  // subagent falls back to the theme's shared sheet, same as the static cast.
-  assert.deepEqual(cast.sprites, OV.Themes.get('leaf').sprites);
+  // A mapped subagent borrows that character's OWN art, not the fallback sheet.
+  const builderEntry = OV.Themes.get('leaf').cast.find((c) => c.id === 'builder');
+  assert.deepEqual(cast.sprites, builderEntry.sprites);
+  assert.match(cast.sprites.sheet, /sasuke-sheet\.webp$/);
 });
 
 test('castFor: leaf turns an unmapped subagent type into a shadow clone of the orchestrator', () => {
@@ -191,7 +192,9 @@ test('castFor: leaf resolves an aliased subagent type to the target cast member'
   assert.equal(cast.emoji, validator.emoji);
   assert.equal(cast.color, validator.color);
   assert.equal(cast.isClone, false);
-  assert.deepEqual(cast.sprites, OV.Themes.get('leaf').sprites);
+  assert.deepEqual(cast.sprites, validator.sprites);
+  assert.match(cast.sprites.sheet, /shikamaru-sheet\.webp$/);
+  assert.equal(cast.sprites.counts.runRight, 6, 'alias must carry Shikamaru\'s 6-frame run, not an 8-frame default');
 });
 
 // ensureAgent: only touches OV.World.byId / .agents / .addAgent, so a minimal
@@ -219,7 +222,9 @@ test('ensureAgent: leaf threads the resolved sprites config onto a mapped subage
   const W = stubWorld();
   OV.World = W;
   const def = OV.Events.ensureAgent({ agent: 'sub-1', role: 'builder' });
-  assert.deepEqual(def.sprites, OV.Themes.get('leaf').sprites);
+  const builderEntry = OV.Themes.get('leaf').cast.find((c) => c.id === 'builder');
+  assert.deepEqual(def.sprites, builderEntry.sprites);
+  assert.match(def.sprites.sheet, /sasuke-sheet\.webp$/);
 });
 
 test('ensureAgent: leaf threads the resolved sprites config onto an unmapped (clone) subagent\'s def', () => {
@@ -232,6 +237,9 @@ test('ensureAgent: leaf threads the resolved sprites config onto an unmapped (cl
   OV.World = W;
   const def = OV.Events.ensureAgent({ agent: 'sub-2', role: 'general-purpose' });
   assert.deepEqual(def.sprites, OV.Themes.get('leaf').sprites);
+  // A clone has no cast entry, so it must land on the theme-level fallback —
+  // Naruto's sheet, because a shadow clone is a clone OF the orchestrator.
+  assert.match(def.sprites.sheet, /naruto-sheet\.webp$/);
 });
 
 test('ensureAgent: office builds a def with no sprites config at all', () => {

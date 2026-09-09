@@ -171,6 +171,52 @@ test('problemsFor: a sprites.counts value below 1 is reported', () => {
   );
 });
 
+test('problemsFor: a per-cast sprites sheet missing on disk is reported, naming that cast id', () => {
+  const OV = ov();
+  const theme = validTheme();
+  theme.sprites = validSprites();
+  // The theme-level block is fine; only one character's override is broken.
+  // Before per-cast checking existed this passed silently and that character
+  // would have quietly rendered as emoji in the browser.
+  theme.cast[0].sprites = validSprites({ sheet: 'assets/themes/fixture/no-such-character.webp' });
+  const problems = problemsFor(OV, theme);
+  assert.ok(
+    problems.some((p) => p.includes('no-such-character.webp') && p.includes(theme.cast[0].id)),
+    'expected a problem naming both the missing path and the cast id, got: ' + JSON.stringify(problems)
+  );
+});
+
+test('problemsFor: a per-cast sprites block with disagreeing rows/counts is reported', () => {
+  const OV = ov();
+  const theme = validTheme();
+  theme.cast[0].sprites = validSprites({ counts: { runRight: 6, runLeft: 6, idle: 4 } }); // no 'work'
+  const problems = problemsFor(OV, theme);
+  assert.ok(
+    problems.some((p) => p.includes(theme.cast[0].id) && p.includes('rows') && p.includes('counts')),
+    'expected a rows/counts mismatch attributed to the cast entry, got: ' + JSON.stringify(problems)
+  );
+});
+
+test('problemsFor: a missing assets.floor is reported', () => {
+  const OV = ov();
+  const theme = validTheme();
+  theme.assets = { base: 'assets/themes/fixture/', floor: 'no-such-floor.webp' };
+  const problems = problemsFor(OV, theme);
+  assert.ok(
+    problems.some((p) => p.includes('no-such-floor.webp')),
+    'expected a problem naming the missing floor image, got: ' + JSON.stringify(problems)
+  );
+});
+
+test('problemsFor: the real leaf theme (per-cast sheets, floor, sound) is reported clean', () => {
+  const OV = loadOV(['js/config.js', 'js/nav.js', 'js/themes/index.js', 'js/themes/leaf.js']);
+  const leaf = OV.Themes.get('leaf');
+  // Guards the whole shipped asset set at once: five per-cast sheets, the
+  // fallback sheet, the floor image and the spawn sound must all resolve.
+  assert.equal(leaf.cast.filter((c) => c.sprites).length, 5, 'all five cast members should declare art');
+  assert.deepEqual(problemsFor(OV, leaf), []);
+});
+
 test('problemsFor: a valid sprites block referencing the real leaf sheet is reported clean', () => {
   const OV = ov();
   const theme = validTheme();

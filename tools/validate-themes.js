@@ -15,9 +15,8 @@ const { loadOV, ROOT } = require('./browser-module');
 function problemsFor(OV, theme) {
   const problems = OV.Themes.validate(theme).errors.slice();
 
-  // Asset check. A theme may legitimately reference no assets at all (the Hidden
-  // Leaf theme ships emoji-only while artwork is deferred); only what IS referenced
-  // must exist on disk.
+  // Asset check. A theme may legitimately reference no assets at all; only what
+  // IS referenced must exist on disk.
   const base = (theme.assets && theme.assets.base) || '';
   const assets = [];
   if (theme.assets && theme.assets.floor) assets.push(theme.assets.floor);
@@ -26,16 +25,20 @@ function problemsFor(OV, theme) {
     if (!fs.existsSync(path.join(ROOT, base + a))) problems.push('missing asset: ' + base + a);
   });
 
-  // Sprite-sheet check (Task 18). A theme may declare no `sprites` block at
-  // all (falls back to the emoji cast, unchanged); a declared block must
-  // point at a real file, and its `rows`/`counts` maps — row-name -> index,
-  // row-name -> frame count — must agree on exactly which rows exist.
-  if (theme.sprites) {
-    const sp = theme.sprites;
+  // Sprite-sheet check. A theme may declare no `sprites` block at all (falls
+  // back to the emoji cast, unchanged); a declared block must point at a real
+  // file, and its `rows`/`counts` maps — row-name -> index, row-name -> frame
+  // count — must agree on exactly which rows exist.
+  //
+  // Runs over the theme-level block AND every per-cast override, so a typo in
+  // any one character's path fails CI rather than silently downgrading that
+  // character to emoji. `label` names which block failed.
+  function checkSprites(sp, label) {
+    if (!sp) return;
     if (!sp.sheet) {
-      problems.push('sprites block is missing a sheet path');
+      problems.push(label + ' block is missing a sheet path');
     } else if (!fs.existsSync(path.join(ROOT, sp.sheet))) {
-      problems.push('missing sprites.sheet: ' + sp.sheet);
+      problems.push('missing ' + label + '.sheet: ' + sp.sheet);
     }
 
     const rows = sp.rows || {};
@@ -43,22 +46,27 @@ function problemsFor(OV, theme) {
     const rowKeys = Object.keys(rows).sort();
     const countKeys = Object.keys(counts).sort();
     if (JSON.stringify(rowKeys) !== JSON.stringify(countKeys)) {
-      problems.push('sprites.rows and sprites.counts key sets disagree: ' +
+      problems.push(label + '.rows and ' + label + '.counts key sets disagree: ' +
         JSON.stringify(rowKeys) + ' vs ' + JSON.stringify(countKeys));
-    } else {
-      const maxIndex = rowKeys.length - 1;
-      rowKeys.forEach((key) => {
-        const r = rows[key];
-        if (typeof r !== 'number' || r < 0 || r > maxIndex) {
-          problems.push('sprites.rows["' + key + '"] is out of range 0..' + maxIndex + ': ' + r);
-        }
-        const c = counts[key];
-        if (typeof c !== 'number' || c < 1) {
-          problems.push('sprites.counts["' + key + '"] must be >= 1: ' + c);
-        }
-      });
+      return;
     }
+    const maxIndex = rowKeys.length - 1;
+    rowKeys.forEach((key) => {
+      const r = rows[key];
+      if (typeof r !== 'number' || r < 0 || r > maxIndex) {
+        problems.push(label + '.rows["' + key + '"] is out of range 0..' + maxIndex + ': ' + r);
+      }
+      const c = counts[key];
+      if (typeof c !== 'number' || c < 1) {
+        problems.push(label + '.counts["' + key + '"] must be >= 1: ' + c);
+      }
+    });
   }
+
+  checkSprites(theme.sprites, 'sprites');
+  (theme.cast || []).forEach((c) => {
+    if (c.sprites) checkSprites(c.sprites, 'cast[' + c.id + '].sprites');
+  });
 
   // Spawn-sound check. Like the assets above, a theme may play no sound at all
   // (office does, silently); only a declared effects.spawnSound must resolve

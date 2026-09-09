@@ -17,6 +17,8 @@
   // element (see js/sprite.js and css/styles.css). Listed once so both the
   // apply and the load-failure cleanup path stay in sync.
   const SPRITE_ROW_CLASSES = ['sprite-row-runRight', 'sprite-row-runLeft', 'sprite-row-idle', 'sprite-row-work'];
+  // Frame counts the stylesheet has keyframes for; anything else animates not at all.
+  const SPRITE_STEP_CLASSES = ['sprite-steps-4', 'sprite-steps-6', 'sprite-steps-8'];
 
   function Agent(def, floorEl) {
     this.id = def.id || 'agent-' + (++seq);
@@ -282,6 +284,15 @@
     const classList = this.spriteEl.classList;
     for (let i = 0; i < SPRITE_ROW_CLASSES.length; i++) classList.remove(SPRITE_ROW_CLASSES[i]);
     classList.add('sprite-row-' + row);
+
+    // How many frames THIS row has is per-character data (Shikamaru runs 6
+    // where the rest run 8), and CSS `steps()` cannot read a custom property —
+    // so the count has to arrive as a class. The row class carries the row's
+    // Y offset and duration; this one carries the frame count and distance.
+    const counts = (this.sprites && this.sprites.counts) || {};
+    const n = counts[row];
+    for (let i = 0; i < SPRITE_STEP_CLASSES.length; i++) classList.remove(SPRITE_STEP_CLASSES[i]);
+    if (SPRITE_STEP_CLASSES.indexOf('sprite-steps-' + n) !== -1) classList.add('sprite-steps-' + n);
   };
 
   // Sprite art, in order of preference: the theme's frame-animation sheet,
@@ -329,6 +340,16 @@
       el.classList.add('has-sheet');
       self.el.classList.add('has-sheet-sprite');
       el.style.backgroundImage = 'url("' + sheet + '")';
+      // Geometry comes from the theme, never from the stylesheet: the CSS
+      // derives width, background-size and every keyframe offset from these,
+      // so a sheet with different cells or a different column count needs no
+      // CSS change and the two can never drift apart.
+      const cell = self.sprites.cell || {};
+      const rows = Object.keys(self.sprites.rows || {}).length || 4;
+      el.style.setProperty('--sprite-cell-w', String(cell.w || 78));
+      el.style.setProperty('--sprite-cell-h', String(cell.h || 87));
+      el.style.setProperty('--sprite-cols', String(self.sprites.cols || 6));
+      el.style.setProperty('--sprite-rows', String(rows));
       self._sheetReady = true;
       self._spriteRow = null; // force _updateSpriteRow to apply a row class now
       self.render();
@@ -339,6 +360,7 @@
       self._spriteRow = null;
       el.classList.remove('has-sheet');
       for (let i = 0; i < SPRITE_ROW_CLASSES.length; i++) el.classList.remove(SPRITE_ROW_CLASSES[i]);
+      for (let i = 0; i < SPRITE_STEP_CLASSES.length; i++) el.classList.remove(SPRITE_STEP_CLASSES[i]);
       self.el.classList.remove('has-sheet-sprite');
       el.style.backgroundImage = '';
       el.textContent = self.emoji;

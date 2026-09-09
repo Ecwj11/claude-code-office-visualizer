@@ -361,19 +361,26 @@ html, body {
    js/agent.js, which only ever toggles which `sprite-row-*` class is present
    — every frame step below is pure CSS `steps()` keyframes stepping through
    `background-position`, matched to the shipped sheet's real geometry
-   (assets/themes/leaf/naruto-sheet.webp: 78x87 cells, 6 cols x 4 rows).
+   (character sheets: 88x87 cells, 8 cols x 4 rows; see js/themes/leaf.js).
    `--sprite-h` is the only sizing knob; width and every keyframe offset
    derive from it via calc(), so resizing never touches a keyframe.
    ========================================================================= */
 .agent-sprite.has-sheet {
   --sprite-h: 52px;
-  --sprite-w: calc(var(--sprite-h) * 78 / 87);
+  /* Cell size, column and row counts are published by js/agent.js from the
+     theme's own `sprites` block — never hardcoded here, so a sheet with
+     different geometry needs no CSS change and the two cannot drift.
+     The fallbacks only matter if a sheet somehow paints before they're set. */
+  --sprite-cell-w: 88;
+  --sprite-cell-h: 87;
+  --sprite-cols: 8;
+  --sprite-rows: 4;
+  --sprite-w: calc(var(--sprite-h) * var(--sprite-cell-w) / var(--sprite-cell-h));
   width: var(--sprite-w);
   height: var(--sprite-h);
   font-size: 0;
   background-repeat: no-repeat;
-  /* natural sheet is 6 cols x 4 rows of the cell above, scaled together */
-  background-size: calc(var(--sprite-w) * 6) calc(var(--sprite-h) * 4);
+  background-size: calc(var(--sprite-w) * var(--sprite-cols)) calc(var(--sprite-h) * var(--sprite-rows));
   /* Longhand on purpose (not the `background-position` shorthand): row
      selection (`-y`, below) and frame-stepping (`-x`, animated) are kept as
      two independent properties so neither can clobber the other — see the
@@ -407,6 +414,10 @@ html, body {
    Now the same collision can only ever freeze the frame-stepping (holds on
    frame 0) while the correct row stays correct, because none of those rules
    touch `background-position-y`. */
+@keyframes sprite-frames-8 {
+  from { background-position-x: 0; }
+  to   { background-position-x: calc(var(--sprite-w) * -8); }
+}
 @keyframes sprite-frames-6 {
   from { background-position-x: 0; }
   to   { background-position-x: calc(var(--sprite-w) * -6); }
@@ -416,26 +427,42 @@ html, body {
   to   { background-position-x: calc(var(--sprite-w) * -4); }
 }
 
-/* row 0: run-right (6 real frames, fills all 6 columns) */
+/* Frame count is per character, not per row: most of the cast runs 8 frames,
+   Shikamaru runs 6, and every idle/work cycle is 4. `steps()` cannot read a
+   custom property, so js/agent.js applies a `sprite-steps-N` class from the
+   theme's `counts`. These rules therefore own the NAME and the STEPPING; the
+   `sprite-row-*` rules below own the ROW and the DURATION.
+
+   All longhands, deliberately — the `animation` shorthand would reset
+   whichever half the other rule had set, and these two groups have equal
+   specificity, so shorthand would make the result order-dependent. */
+.agent-sprite.has-sheet.sprite-steps-8 { animation-name: sprite-frames-8; animation-timing-function: steps(8); }
+.agent-sprite.has-sheet.sprite-steps-6 { animation-name: sprite-frames-6; animation-timing-function: steps(6); }
+.agent-sprite.has-sheet.sprite-steps-4 { animation-name: sprite-frames-4; animation-timing-function: steps(4); }
+
+/* A short row's trailing columns stay transparent and are never reached,
+   because the step count comes from `counts`, not from `--sprite-cols`. */
 .agent-sprite.has-sheet.sprite-row-runRight {
   background-position-y: 0;
-  animation: sprite-frames-6 .6s steps(6) infinite;
+  animation-duration: .65s;
+  animation-iteration-count: infinite;
 }
-/* row 1: run-left (6 frames; drawn facing left already, see the flip note above) */
+/* run-left is drawn facing left already — see the flip note above */
 .agent-sprite.has-sheet.sprite-row-runLeft {
   background-position-y: calc(var(--sprite-h) * -1);
-  animation: sprite-frames-6 .6s steps(6) infinite;
+  animation-duration: .65s;
+  animation-iteration-count: infinite;
 }
-/* row 2: idle (only 4 of the 6 columns are real; steps(4) never reaches the
-   transparent trailing cells) */
 .agent-sprite.has-sheet.sprite-row-idle {
   background-position-y: calc(var(--sprite-h) * -2);
-  animation: sprite-frames-4 1.6s steps(4) infinite;
+  animation-duration: 1.6s;
+  animation-iteration-count: infinite;
 }
-/* row 3: work — kneeling, writing on a scroll (4 frames) */
+/* work — writing, reading, or at a keyboard depending on the character */
 .agent-sprite.has-sheet.sprite-row-work {
   background-position-y: calc(var(--sprite-h) * -3);
-  animation: sprite-frames-4 1.1s steps(4) infinite;
+  animation-duration: 1.1s;
+  animation-iteration-count: infinite;
 }
 
 /* shadow */
@@ -701,25 +728,35 @@ html, body {
 }
 
 /* ============ shadow clone jutsu ============ */
+/* Six-frame puff sprite: small burst -> billowing cloud with a silhouette
+   inside -> dissipating wisp. Strip is 576x89 (6 cells of 96x89), scaled down
+   via --smoke-w/--smoke-h; background-size scales with it.
+
+   Only `background-position` animates. `transform` stays a static centring
+   translate, deliberately: animating transform here previously fought the
+   element's own positioning, and the same property-separation discipline the
+   agent sprites use (animated background-position-x vs. static everything
+   else) keeps this immune to the specificity collisions found earlier.
+
+   The element is removed by js/effects.js at SMOKE_MS + 300 = 550ms, so the
+   500ms animation always completes first. `forwards` holds the final wisp. */
 .jutsu-smoke {
+  --smoke-w: 80px;
+  --smoke-h: 74px;
   position: absolute;
-  width: 70px; height: 70px;
+  width: var(--smoke-w); height: var(--smoke-h);
   transform: translate(-50%, -60%);
-  border-radius: 50%;
   pointer-events: none;
   z-index: 400;
-  background: radial-gradient(circle at 50% 55%,
-    rgba(255,255,255,.95) 0%,
-    rgba(226,232,240,.75) 35%,
-    rgba(148,163,184,.35) 60%,
-    rgba(148,163,184,0) 72%);
-  animation: jutsu-puff 550ms ease-out forwards;
+  background-image: url("assets/themes/leaf/smoke-sheet.webp");
+  background-repeat: no-repeat;
+  background-size: calc(var(--smoke-w) * 6) var(--smoke-h);
+  animation: jutsu-puff 500ms steps(6) forwards;
 }
 
 @keyframes jutsu-puff {
-  0%   { opacity: 0; transform: translate(-50%, -60%) scale(.35); }
-  35%  { opacity: 1; transform: translate(-50%, -62%) scale(1.05); }
-  100% { opacity: 0; transform: translate(-50%, -74%) scale(1.5); }
+  from { background-position: 0 0; }
+  to   { background-position: calc(var(--smoke-w) * -6) 0; }
 }
 
 /* orchestrator mid-seal: braced stance plus a chakra flare */
@@ -758,5 +795,8 @@ html, body {
   .agent-sprite.has-sheet.sprite-row-runRight,
   .agent-sprite.has-sheet.sprite-row-runLeft,
   .agent-sprite.has-sheet.sprite-row-idle,
-  .agent-sprite.has-sheet.sprite-row-work { animation: none; }
+  .agent-sprite.has-sheet.sprite-row-work,
+  .agent-sprite.has-sheet.sprite-steps-8,
+  .agent-sprite.has-sheet.sprite-steps-6,
+  .agent-sprite.has-sheet.sprite-steps-4 { animation: none; }
 }

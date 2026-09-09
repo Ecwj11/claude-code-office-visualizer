@@ -140,7 +140,15 @@
         body.style.setProperty(k, theme.palette[k]);
       });
       if (theme.assets && theme.assets.floor) {
-        body.style.setProperty('--floor-image', 'url("' + theme.assets.base + theme.assets.floor + '")');
+        // Resolve to an ABSOLUTE url before handing it to the custom property.
+        // A relative url() inside a custom property is resolved by the browser
+        // against the stylesheet that *uses* the var() — css/styles.css — not
+        // against the document, so 'assets/themes/leaf/x.webp' would be fetched
+        // as 'css/assets/themes/leaf/x.webp' and 404. Resolving against
+        // document.baseURI here is also what keeps this working over file://,
+        // where a root-relative '/assets/...' path would break instead.
+        const floorUrl = new URL((theme.assets.base || '') + theme.assets.floor, document.baseURI).href;
+        body.style.setProperty('--floor-image', 'url("' + floorUrl + '")');
       } else {
         body.style.removeProperty('--floor-image');
       }

@@ -15,6 +15,20 @@
 
   function nm(canon, generic) { return CANON_NAMES ? canon : generic; }
 
+  // Every character sheet shares one geometry: 704x348, 88x87 cells, 8 columns,
+  // rows runRight/runLeft/idle/work. Only the file and the run-cycle length
+  // differ. Returns a FRESH object each call — never a shared `cell`/`rows`
+  // sub-object — so one cast member's block can't be mutated through another's.
+  function sheetFor(file, runFrames) {
+    return {
+      sheet: 'assets/themes/leaf/' + file,
+      cell: { w: 88, h: 87 },
+      cols: 8,
+      rows: { runRight: 0, runLeft: 1, idle: 2, work: 3 },
+      counts: { runRight: runFrames, runLeft: runFrames, idle: 4, work: 4 },
+    };
+  }
+
   OV.Themes.register({
     id: 'leaf',
     name: 'Hidden Leaf',
@@ -95,35 +109,29 @@
     ],
 
     cast: [
-      // No per-cast `sprite`/`sprites` override: per-character art (Sasuke,
-      // Kakashi, Sakura, Shikamaru) doesn't exist yet, so every member below
-      // animates through the shared `sprites` sheet declared right after this
-      // array. Adding one character's own art later means adding `sprites:`
-      // (or the single-image `sprite:`) to that entry only — no other change.
-      { slot: 'ORCHESTRATOR_HOME', id: 'claude', name: nm('Naruto', 'Hokage'), role: 'Orchestrator', emoji: '🍥', color: '#ff9c3f' },
-      { slot: 'WORKER_1', id: 'builder', name: nm('Sasuke', 'Blade'), role: 'Engineer', emoji: '⚡', color: '#6ea8fe' },
-      { slot: 'WORKER_2', id: 'test', name: nm('Sakura', 'Petal'), role: 'QA', emoji: '🌸', color: '#f48fb1' },
-      { slot: 'WORKER_3', id: 'debugger', name: nm('Kakashi', 'Copy-nin'), role: 'Fixer', emoji: '📖', color: '#b0b7c6' },
-      { slot: 'WORKER_4', id: 'validator', name: nm('Shikamaru', 'Shadow'), role: 'Reviewer', emoji: '🧩', color: '#9ccc65' },
+      // Every member has its own art. `sheetFor` builds a fresh block per
+      // character (no shared sub-objects), so one character's geometry can
+      // never be mutated through another's. Shikamaru's run cycles are 6
+      // frames where the rest are 8 — the per-row `steps(n)` handling covers
+      // that, and his two trailing columns are simply never displayed.
+      { slot: 'ORCHESTRATOR_HOME', id: 'claude', name: nm('Naruto', 'Hokage'), role: 'Orchestrator', emoji: '🍥', color: '#ff9c3f', sprites: sheetFor('naruto-sheet.webp', 8) },
+      { slot: 'WORKER_1', id: 'builder', name: nm('Sasuke', 'Blade'), role: 'Engineer', emoji: '⚡', color: '#6ea8fe', sprites: sheetFor('sasuke-sheet.webp', 8) },
+      { slot: 'WORKER_2', id: 'test', name: nm('Sakura', 'Petal'), role: 'QA', emoji: '🌸', color: '#f48fb1', sprites: sheetFor('sakura-sheet.webp', 8) },
+      { slot: 'WORKER_3', id: 'debugger', name: nm('Kakashi', 'Copy-nin'), role: 'Fixer', emoji: '📖', color: '#b0b7c6', sprites: sheetFor('kakashi-sheet.webp', 8) },
+      { slot: 'WORKER_4', id: 'validator', name: nm('Shikamaru', 'Shadow'), role: 'Reviewer', emoji: '🧩', color: '#9ccc65', sprites: sheetFor('shikamaru-sheet.webp', 6) },
     ],
 
-    // Shared frame-animation sheet for the whole cast, and every shadow
-    // clone spawned at runtime (js/themes/index.js + js/events.js both fall
-    // back to this when a cast entry declares no override of its own). See
-    // js/sprite.js for the state→row logic and js/agent.js for the
+    // Fallback sheet for anything with no cast entry of its own — every shadow
+    // clone spawned at runtime lands here (js/themes/index.js and js/events.js
+    // both fall back to it). Naruto's art, because a clone IS a Naruto clone.
+    // See js/sprite.js for the state→row logic and js/agent.js for the
     // load-failure fallback to the emoji above.
     //
-    // Deliberately a top-level `sprites` key, NOT nested under `assets`:
-    // `assets` must stay absent from this theme so the still-deferred
-    // floor-image path (Task 10) keeps detecting "no assets" exactly as it
-    // does today.
-    sprites: {
-      sheet: 'assets/themes/leaf/naruto-sheet.webp',
-      cell: { w: 78, h: 87 },
-      cols: 6,
-      rows: { runRight: 0, runLeft: 1, idle: 2, work: 3 },
-      counts: { runRight: 6, runLeft: 6, idle: 4, work: 4 },
-    },
+    // Kept as a top-level `sprites` key rather than nested under `assets`:
+    // sheet paths are full document-relative paths, while `assets.base` is
+    // prefixed onto the single-image `sprite` key. Keeping them separate stops
+    // the two path conventions from colliding.
+    sprites: sheetFor('naruto-sheet.webp', 8),
 
     // Live subagents arrive identified by subagent_type. Mapped types borrow a
     // cast member's art; everything else renders as a shadow clone.
@@ -144,8 +152,10 @@
       ambient_AMBIENT_SPOT: 'Watching the gate',
     },
 
-    // No `assets` block while Task 10 is deferred. `--floor-image` therefore stays
-    // unset and `.office-floor` falls back to the palette gradient below.
+    // The painted mission-room scene. js/world.js sets `--floor-image` from
+    // these two fields; `.office-floor` falls back to the palette gradient
+    // below if the image ever fails to load.
+    assets: { base: 'assets/themes/leaf/', floor: 'village-floor.webp' },
 
     palette: {
       '--floor': '#3f7d4a',
