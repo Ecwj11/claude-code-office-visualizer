@@ -111,6 +111,73 @@ test('problemsFor: a valid effects.spawnSound path is reported clean', () => {
   assert.deepEqual(problemsFor(OV, theme), []);
 });
 
+// ---- sprites block (Task 18) ----------------------------------------------
+// Mirrors the asset check above: a theme may declare no `sprites` block at
+// all (the base `validTheme()` fixture does, and stays fully valid); only a
+// declared block must resolve to a real file and have `rows`/`counts` in
+// agreement.
+
+function validSprites(overrides) {
+  return Object.assign({
+    sheet: 'assets/themes/leaf/naruto-sheet.webp',
+    cell: { w: 78, h: 87 },
+    cols: 6,
+    rows: { runRight: 0, runLeft: 1, idle: 2, work: 3 },
+    counts: { runRight: 6, runLeft: 6, idle: 4, work: 4 },
+  }, overrides || {});
+}
+
+test('problemsFor: a sprites.sheet that does not exist on disk is reported', () => {
+  const OV = ov();
+  const theme = validTheme();
+  theme.sprites = validSprites({ sheet: 'assets/themes/fixture/no-such-sheet.webp' });
+  const problems = problemsFor(OV, theme);
+  assert.ok(
+    problems.some((p) => p.includes('assets/themes/fixture/no-such-sheet.webp')),
+    'expected a problem mentioning the missing sheet path, got: ' + JSON.stringify(problems)
+  );
+});
+
+test('problemsFor: sprites.rows and sprites.counts key sets disagreeing is reported', () => {
+  const OV = ov();
+  const theme = validTheme();
+  theme.sprites = validSprites({ counts: { runRight: 6, runLeft: 6, idle: 4 } }); // missing 'work'
+  const problems = problemsFor(OV, theme);
+  assert.ok(
+    problems.some((p) => p.includes('rows') && p.includes('counts')),
+    'expected a problem about the rows/counts key mismatch, got: ' + JSON.stringify(problems)
+  );
+});
+
+test('problemsFor: a sprites.rows index outside 0..rows-1 is reported', () => {
+  const OV = ov();
+  const theme = validTheme();
+  theme.sprites = validSprites({ rows: { runRight: 0, runLeft: 1, idle: 2, work: 9 } });
+  const problems = problemsFor(OV, theme);
+  assert.ok(
+    problems.some((p) => p.includes('work') && p.includes('9')),
+    'expected a problem about the out-of-range row index, got: ' + JSON.stringify(problems)
+  );
+});
+
+test('problemsFor: a sprites.counts value below 1 is reported', () => {
+  const OV = ov();
+  const theme = validTheme();
+  theme.sprites = validSprites({ counts: { runRight: 6, runLeft: 6, idle: 4, work: 0 } });
+  const problems = problemsFor(OV, theme);
+  assert.ok(
+    problems.some((p) => p.includes('counts') && p.includes('work')),
+    'expected a problem about the invalid frame count, got: ' + JSON.stringify(problems)
+  );
+});
+
+test('problemsFor: a valid sprites block referencing the real leaf sheet is reported clean', () => {
+  const OV = ov();
+  const theme = validTheme();
+  theme.sprites = validSprites();
+  assert.deepEqual(problemsFor(OV, theme), []);
+});
+
 test('problemsFor: a slot with no edge connecting it is reported as stranded', () => {
   const OV = ov();
   const theme = validTheme();

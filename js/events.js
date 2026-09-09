@@ -36,6 +36,7 @@
         name: entry.name,
         emoji: entry.emoji,
         sprite: entry.sprite ? base + entry.sprite : null,
+        sprites: entry.sprites || theme.sprites || null,
         color: entry.color,
         isClone: false,
       };
@@ -52,6 +53,7 @@
       name: subagentType || 'clone',
       emoji: boss.emoji,
       sprite: boss.sprite ? base + boss.sprite : null,
+      sprites: boss.sprites || theme.sprites || null,
       color: '#7fd1e8', // chakra blue marks a clone
       isClone: true,
     };
@@ -69,6 +71,7 @@
       role: evt.role || 'Agent',
       emoji: (cast && cast.emoji) || evt.emoji || '🤖',
       sprite: (cast && cast.sprite) || null,
+      sprites: (cast && cast.sprites) || null,
       color: (cast && cast.color) || evt.color || '#9aa4b2',
       home: evt.home || firstFreeDesk() || 'GATHER_SPOT',
       isClone: !!(cast && cast.isClone),

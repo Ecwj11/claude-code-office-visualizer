@@ -110,6 +110,10 @@
         role: c.role,
         emoji: c.emoji,
         sprite: c.sprite ? (theme.assets && theme.assets.base ? theme.assets.base + c.sprite : c.sprite) : null,
+        // Frame-animation sheet (Task 18): a per-cast override if one is ever
+        // declared, otherwise the whole theme's shared sheet. Neither exists
+        // for office, so its agents get null here and keep rendering emoji.
+        sprites: c.sprites || theme.sprites || null,
         color: c.color,
         home: c.slot,
         orchestrator: c.slot === 'ORCHESTRATOR_HOME',

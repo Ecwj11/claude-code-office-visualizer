@@ -26,6 +26,40 @@ function problemsFor(OV, theme) {
     if (!fs.existsSync(path.join(ROOT, base + a))) problems.push('missing asset: ' + base + a);
   });
 
+  // Sprite-sheet check (Task 18). A theme may declare no `sprites` block at
+  // all (falls back to the emoji cast, unchanged); a declared block must
+  // point at a real file, and its `rows`/`counts` maps — row-name -> index,
+  // row-name -> frame count — must agree on exactly which rows exist.
+  if (theme.sprites) {
+    const sp = theme.sprites;
+    if (!sp.sheet) {
+      problems.push('sprites block is missing a sheet path');
+    } else if (!fs.existsSync(path.join(ROOT, sp.sheet))) {
+      problems.push('missing sprites.sheet: ' + sp.sheet);
+    }
+
+    const rows = sp.rows || {};
+    const counts = sp.counts || {};
+    const rowKeys = Object.keys(rows).sort();
+    const countKeys = Object.keys(counts).sort();
+    if (JSON.stringify(rowKeys) !== JSON.stringify(countKeys)) {
+      problems.push('sprites.rows and sprites.counts key sets disagree: ' +
+        JSON.stringify(rowKeys) + ' vs ' + JSON.stringify(countKeys));
+    } else {
+      const maxIndex = rowKeys.length - 1;
+      rowKeys.forEach((key) => {
+        const r = rows[key];
+        if (typeof r !== 'number' || r < 0 || r > maxIndex) {
+          problems.push('sprites.rows["' + key + '"] is out of range 0..' + maxIndex + ': ' + r);
+        }
+        const c = counts[key];
+        if (typeof c !== 'number' || c < 1) {
+          problems.push('sprites.counts["' + key + '"] must be >= 1: ' + c);
+        }
+      });
+    }
+  }
+
   // Spawn-sound check. Like the assets above, a theme may play no sound at all
   // (office does, silently); only a declared effects.spawnSound must resolve
   // to a real file, relative to the repo root (it is not prefixed by `base`).

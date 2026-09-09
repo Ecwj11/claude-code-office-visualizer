@@ -95,15 +95,35 @@
     ],
 
     cast: [
-      // No `sprite` fields: Task 10 is deferred, so the cast renders as emoji via the
-      // fallback path built in Task 7. Adding artwork later means adding `sprite:` here
-      // and an `assets` block below — no other change.
+      // No per-cast `sprite`/`sprites` override: per-character art (Sasuke,
+      // Kakashi, Sakura, Shikamaru) doesn't exist yet, so every member below
+      // animates through the shared `sprites` sheet declared right after this
+      // array. Adding one character's own art later means adding `sprites:`
+      // (or the single-image `sprite:`) to that entry only — no other change.
       { slot: 'ORCHESTRATOR_HOME', id: 'claude', name: nm('Naruto', 'Hokage'), role: 'Orchestrator', emoji: '🍥', color: '#ff9c3f' },
       { slot: 'WORKER_1', id: 'builder', name: nm('Sasuke', 'Blade'), role: 'Engineer', emoji: '⚡', color: '#6ea8fe' },
       { slot: 'WORKER_2', id: 'test', name: nm('Sakura', 'Petal'), role: 'QA', emoji: '🌸', color: '#f48fb1' },
       { slot: 'WORKER_3', id: 'debugger', name: nm('Kakashi', 'Copy-nin'), role: 'Fixer', emoji: '📖', color: '#b0b7c6' },
       { slot: 'WORKER_4', id: 'validator', name: nm('Shikamaru', 'Shadow'), role: 'Reviewer', emoji: '🧩', color: '#9ccc65' },
     ],
+
+    // Shared frame-animation sheet for the whole cast, and every shadow
+    // clone spawned at runtime (js/themes/index.js + js/events.js both fall
+    // back to this when a cast entry declares no override of its own). See
+    // js/sprite.js for the state→row logic and js/agent.js for the
+    // load-failure fallback to the emoji above.
+    //
+    // Deliberately a top-level `sprites` key, NOT nested under `assets`:
+    // `assets` must stay absent from this theme so the still-deferred
+    // floor-image path (Task 10) keeps detecting "no assets" exactly as it
+    // does today.
+    sprites: {
+      sheet: 'assets/themes/leaf/naruto-sheet.webp',
+      cell: { w: 78, h: 87 },
+      cols: 6,
+      rows: { runRight: 0, runLeft: 1, idle: 2, work: 3 },
+      counts: { runRight: 6, runLeft: 6, idle: 4, work: 4 },
+    },
 
     // Live subagents arrive identified by subagent_type. Mapped types borrow a
     // cast member's art; everything else renders as a shadow clone.
