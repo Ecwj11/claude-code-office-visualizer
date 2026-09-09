@@ -9,7 +9,15 @@ A small virtual engineering office where Claude Code's agents **walk around and
 work**. Plain HTML/CSS/JS (no framework, no build step) plus an optional
 zero-dependency Node bridge for **live** Claude Code hook events.
 
-![Agent Office — Claude at the whiteboard, Builder and Debugger collaborating, Test running, states in the side panel](./docs/office.jpg)
+Two themes, switchable at runtime from the toolbar.
+
+**Agent Office** — Claude orchestrating, agents walking between desks, working, and collaborating:
+
+![Agent Office theme — agents walking between desks, working at monitors, a subagent spawning](./docs/office.gif)
+
+**Hidden Leaf** — the same office as a ninja mission room, where every subagent arrives as a shadow clone:
+
+![Hidden Leaf theme — Naruto calling Kage Bunshin no Jutsu while shadow clones walk the mission room](./docs/leaf.gif)
 
 ## Get it running (for anyone)
 
