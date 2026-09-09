@@ -97,15 +97,38 @@
 
     // Scenery is painted into village-floor.webp; these are label hotspots
     // positioned to sit under the corresponding painted landmark.
+    // Image props keyed out of the supplied art. `w` is a percent of the floor
+    // width, `aspect` is the source art's w/h so height follows automatically.
+    // Floor-standing props anchor on their base (the y value is where they meet
+    // the floor); wall art uses anchor:'center'.
+    // Image props keyed out of the supplied art. `w` is a percent of the floor
+    // width; `aspect` is the source art's w/h, so height follows and props
+    // scale with the room. Floor-standing props anchor on their base (the y
+    // value is where they meet the floor); wall art would use anchor:'center'.
+    //
+    // Only the desks and the tea corner are placed. background.jpg already
+    // paints a mission board on the left wall, a window on the rear wall and
+    // shelving upper-right, so mission-board.webp / window.webp / and the
+    // hokage tower were tried at those positions and removed: the first two
+    // rendered a second board and a second window directly on top of the
+    // painted ones, and the tower is an exterior building that reads as a toy
+    // standing on the office floor. The assets stay in props/ — placing them
+    // is one entry each if a plainer background ever replaces this one.
     furniture: [
-      { id: 'window', kind: 'hotspot', x: 50, y: 8, label: 'Window' },
-      { id: 'tower', kind: 'hotspot', x: 50, y: 22, label: nm('Hokage tower', 'Leader tower') },
-      { id: 'tea', kind: 'hotspot', x: 87, y: 18, label: 'Tea corner' },
-      { id: 'board', kind: 'hotspot', x: 12, y: 30, label: 'Mission board' },
-      { id: 'post-1', kind: 'hotspot', x: 18, y: 48, label: 'Desk' },
-      { id: 'post-2', kind: 'hotspot', x: 82, y: 48, label: 'Desk' },
-      { id: 'post-3', kind: 'hotspot', x: 18, y: 74, label: 'Desk' },
-      { id: 'post-4', kind: 'hotspot', x: 82, y: 74, label: 'Desk' },
+      { id: 'tea', kind: 'prop', x: 89, y: 30, w: 8, aspect: 0.7846,
+        sprite: 'assets/themes/leaf/props/tea-corner.webp', label: 'Tea corner' },
+
+      // One desk per agent seat, so every worker visibly sits at something.
+      { id: 'desk-boss', kind: 'prop', x: 50, y: 26, w: 11, aspect: 1.2652,
+        sprite: 'assets/themes/leaf/props/desk.webp', label: nm('Hokage desk', 'Leader desk') },
+      { id: 'desk-1', kind: 'prop', x: 18, y: 52, w: 11, aspect: 1.2652,
+        sprite: 'assets/themes/leaf/props/desk.webp', label: 'Desk' },
+      { id: 'desk-2', kind: 'prop', x: 82, y: 52, w: 11, aspect: 1.2652,
+        sprite: 'assets/themes/leaf/props/desk.webp', label: 'Desk' },
+      { id: 'desk-3', kind: 'prop', x: 18, y: 78, w: 11, aspect: 1.2652,
+        sprite: 'assets/themes/leaf/props/desk.webp', label: 'Desk' },
+      { id: 'desk-4', kind: 'prop', x: 82, y: 78, w: 11, aspect: 1.2652,
+        sprite: 'assets/themes/leaf/props/desk.webp', label: 'Desk' },
     ],
 
     cast: [

@@ -171,6 +171,31 @@ test('problemsFor: a sprites.counts value below 1 is reported', () => {
   );
 });
 
+test('problemsFor: a furniture prop with a missing sprite file is reported', () => {
+  const OV = ov();
+  const theme = validTheme();
+  theme.furniture = [{ id: 'desk-1', kind: 'prop', x: 10, y: 10, w: 11, aspect: 1.26,
+                       sprite: 'assets/themes/fixture/no-such-prop.webp' }];
+  const problems = problemsFor(OV, theme);
+  assert.ok(
+    problems.some((p) => p.includes('no-such-prop.webp') && p.includes('desk-1')),
+    'expected a problem naming the prop and its path, got: ' + JSON.stringify(problems)
+  );
+});
+
+test('problemsFor: a furniture prop missing w/aspect is reported', () => {
+  const OV = ov();
+  const theme = validTheme();
+  // Without these the prop collapses to a few pixels in the browser — the exact
+  // failure this build already hit once when the percentage sized against the
+  // wrong box — and nothing else would catch it.
+  theme.furniture = [{ id: 'tea', kind: 'prop', x: 10, y: 10,
+                       sprite: 'assets/themes/leaf/props/tea-corner.webp' }];
+  const problems = problemsFor(OV, theme);
+  assert.ok(problems.some((p) => p.includes('tea') && p.includes('w')), 'expected a w problem');
+  assert.ok(problems.some((p) => p.includes('tea') && p.includes('aspect')), 'expected an aspect problem');
+});
+
 test('problemsFor: a frame count with no matching CSS keyframes is reported', () => {
   const OV = ov();
   const theme = validTheme();

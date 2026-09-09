@@ -230,6 +230,21 @@ html, body {
   overflow: hidden;
 }
 
+/* Image props (theme-supplied art). Width is set inline as a % of the floor;
+   height follows from aspect-ratio, so props scale with the room. They stand ON
+   their coordinate — the y value is the floor contact point — unless the theme
+   marks them anchor:center, which wall art (boards, windows) uses. */
+.furn.prop { z-index: 3; }
+.furn.prop .furn-sprite {
+  width: 100%;                       /* container carries the floor-relative % */
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: bottom center;
+  transform: translateY(50%);        /* base sits on the coordinate */
+  pointer-events: none;
+}
+.furn.prop.anchor-center .furn-sprite { transform: none; }
+
 /* furniture (positioned by inline left/top %, centred) */
 .furn {
   position: absolute;

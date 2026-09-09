@@ -85,7 +85,8 @@
           return;
         }
 
-        el.className = 'furn ' + f.kind + (f.className ? ' ' + f.className : '');
+        el.className = 'furn ' + f.kind + (f.className ? ' ' + f.className : '') +
+          (f.anchor === 'center' ? ' anchor-center' : '');
 
         if (f.kind === 'desk') {
           const m = document.createElement('div');
@@ -100,6 +101,25 @@
           const s = document.createElement('div');
           s.className = 'board-scribble';
           el.appendChild(s);
+        } else if (f.kind === 'prop') {
+          // Image prop. `w` is a percentage of the floor's WIDTH and `aspect`
+          // (w/h of the source art) gives the height, so a prop keeps its
+          // proportions at any floor size without hardcoding pixel heights.
+          //
+          // The url is set here, from JS, on purpose: it resolves against the
+          // document. Writing the same relative path into css/styles.css would
+          // resolve it against the STYLESHEET and fetch css/assets/... -> 404,
+          // which is exactly how the jutsu smoke shipped broken once already.
+          const img = document.createElement('div');
+          img.className = 'furn-sprite';
+          img.style.backgroundImage = 'url("' + f.sprite + '")';
+          // The percentage goes on the POSITIONED container, which resolves it
+          // against the floor. Putting it on the inner sprite instead makes it
+          // resolve against `.furn` — itself content-sized — so the two size
+          // each other in a circle and collapse to a few pixels.
+          if (f.w) el.style.width = f.w + '%';
+          if (f.aspect) img.style.aspectRatio = String(f.aspect);
+          el.appendChild(img);
         } else if (f.emoji) {
           const e = document.createElement('span');
           e.className = f.kind === 'plant' ? 'furn-plant-emoji' : 'furn-emoji';

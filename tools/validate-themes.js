@@ -72,6 +72,21 @@ function problemsFor(OV, theme) {
     });
   }
 
+  // Furniture image props. A typo here renders nothing at all — the element is
+  // created, the background just never loads — so it must fail CI, not the eye.
+  (theme.furniture || []).forEach((f) => {
+    if (!f.sprite) return;
+    if (!fs.existsSync(path.join(ROOT, f.sprite))) {
+      problems.push('missing furniture[' + f.id + '].sprite: ' + f.sprite);
+    }
+    if (typeof f.w !== 'number' || f.w <= 0) {
+      problems.push('furniture[' + f.id + '] needs a positive w (percent of floor width)');
+    }
+    if (typeof f.aspect !== 'number' || f.aspect <= 0) {
+      problems.push('furniture[' + f.id + '] needs a positive aspect (source w/h)');
+    }
+  });
+
   checkSprites(theme.sprites, 'sprites');
   (theme.cast || []).forEach((c) => {
     if (c.sprites) checkSprites(c.sprites, 'cast[' + c.id + '].sprites');
