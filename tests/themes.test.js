@@ -160,6 +160,9 @@ test('castFor: leaf maps a known subagent type to that character\'s look', () =>
   assert.equal(cast.emoji, '⚡');
   assert.equal(cast.color, '#6ea8fe');
   assert.equal(cast.isClone, false);
+  // Task 18: 'builder' declares no sprites override of its own, so a mapped
+  // subagent falls back to the theme's shared sheet, same as the static cast.
+  assert.deepEqual(cast.sprites, OV.Themes.get('leaf').sprites);
 });
 
 test('castFor: leaf turns an unmapped subagent type into a shadow clone of the orchestrator', () => {
@@ -172,6 +175,8 @@ test('castFor: leaf turns an unmapped subagent type into a shadow clone of the o
   assert.equal(cast.emoji, '🍥');
   assert.equal(cast.color, '#7fd1e8');
   assert.equal(cast.isClone, true);
+  // Task 18: a shadow clone borrows the boss's look, sprites included.
+  assert.deepEqual(cast.sprites, OV.Themes.get('leaf').sprites);
 });
 
 test('castFor: leaf resolves an aliased subagent type to the target cast member', () => {
@@ -186,4 +191,57 @@ test('castFor: leaf resolves an aliased subagent type to the target cast member'
   assert.equal(cast.emoji, validator.emoji);
   assert.equal(cast.color, validator.color);
   assert.equal(cast.isClone, false);
+  assert.deepEqual(cast.sprites, OV.Themes.get('leaf').sprites);
+});
+
+// ensureAgent: only touches OV.World.byId / .agents / .addAgent, so a minimal
+// stub World (no real Agent/DOM) is enough to inspect the def it builds. This
+// is the def that becomes `new OV.Agent(def, floorEl)` for every dynamically
+// spawned subagent — a typo here (e.g. reading `.sprite` instead of
+// `.sprites` off the resolved cast) would silently make every runtime-spawned
+// leaf clone render as plain emoji with nothing failing elsewhere.
+function stubWorld() {
+  const built = [];
+  return {
+    byId: {},
+    agents: [],
+    addAgent: function (def) { built.push(def); return def; },
+    built: built,
+  };
+}
+
+test('ensureAgent: leaf threads the resolved sprites config onto a mapped subagent\'s def', () => {
+  const OV = loadOV([
+    'js/config.js', 'js/nav.js', 'js/themes/index.js',
+    'js/themes/office.js', 'js/themes/leaf.js', 'js/events.js',
+  ]);
+  OV.Themes.apply('leaf');
+  const W = stubWorld();
+  OV.World = W;
+  const def = OV.Events.ensureAgent({ agent: 'sub-1', role: 'builder' });
+  assert.deepEqual(def.sprites, OV.Themes.get('leaf').sprites);
+});
+
+test('ensureAgent: leaf threads the resolved sprites config onto an unmapped (clone) subagent\'s def', () => {
+  const OV = loadOV([
+    'js/config.js', 'js/nav.js', 'js/themes/index.js',
+    'js/themes/office.js', 'js/themes/leaf.js', 'js/events.js',
+  ]);
+  OV.Themes.apply('leaf');
+  const W = stubWorld();
+  OV.World = W;
+  const def = OV.Events.ensureAgent({ agent: 'sub-2', role: 'general-purpose' });
+  assert.deepEqual(def.sprites, OV.Themes.get('leaf').sprites);
+});
+
+test('ensureAgent: office builds a def with no sprites config at all', () => {
+  const OV = loadOV([
+    'js/config.js', 'js/nav.js', 'js/themes/index.js',
+    'js/themes/office.js', 'js/themes/leaf.js', 'js/events.js',
+  ]);
+  OV.Themes.apply('office');
+  const W = stubWorld();
+  OV.World = W;
+  const def = OV.Events.ensureAgent({ agent: 'sub-3', role: 'builder' });
+  assert.strictEqual(def.sprites, null);
 });

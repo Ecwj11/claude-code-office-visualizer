@@ -95,6 +95,11 @@
 
   const Events = {
     castFor: castFor,
+    // Exposed for the same reason as castFor: it only touches OV.World.byId
+    // / .agents / .addAgent, so a test can stub a minimal World (no real
+    // Agent/DOM needed) and assert on the def it builds — see
+    // tests/themes.test.js's "ensureAgent" coverage of the sprites wiring.
+    ensureAgent: ensureAgent,
 
     emit: function (evt) {
       switch (evt.type) {

@@ -60,7 +60,15 @@ test('office theme yields no sprites config on any built agent def (the emoji pa
   OV.Themes.apply('office');
   assert.ok(OV.AGENT_DEFS.length > 0, 'sanity: office has agents');
   OV.AGENT_DEFS.forEach((def) => {
-    assert.ok(!def.sprites, def.id + ' should have no sprites config');
+    // strictEqual, not a truthiness check: `undefined` is as falsy as `null`,
+    // so a truthiness assertion would still pass if the `sprites:` line in
+    // js/themes/index.js's apply() were deleted outright rather than
+    // correctly resolving to null. This must fail in that case, because
+    // Agent's constructor relies on an explicit `null` (via `def.sprites ||
+    // null`) either way — but the *reason* it's null matters for catching a
+    // future regression here.
+    assert.ok(Object.prototype.hasOwnProperty.call(def, 'sprites'), def.id + ' def should have a sprites key at all');
+    assert.strictEqual(def.sprites, null, def.id + ' should have no sprites config');
   });
 });
 
